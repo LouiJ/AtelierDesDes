@@ -341,9 +341,9 @@ table.hist td.win{color:#15803d;font-weight:700}
     <div class="who-box" id="whoBox"></div>
     <p>Chaque joueur commence avec 2 dés : 1 face +1 PV, 2 faces +1 pierre, 3 faces +1 bois. Une carte événement est révélée après chaque bataille et dure une manche.</p>
     <div class="quick">
-      <button onclick="quick('facile')"><b>🙂 Partie tranquille</b><small>Toi contre les bots facile, moyen et moyen +</small></button>
-      <button onclick="quick('difficile')"><b>😤 Partie corsée</b><small>Toi contre les bots moyen +, difficile et très difficile</small></button>
-      <button onclick="quick('extreme')"><b>🏆 Défier le bot extrême</b><small>Toi contre les bots extrême, très difficile et difficile</small></button>
+      <button onclick="quick('facile')"><b>🙂 Partie tranquille</b><small>Toi contre 3 bots faciles</small></button>
+      <button onclick="quick('difficile')"><b>😤 Partie corsée</b><small>Toi contre les bots facile, moyen et difficile</small></button>
+      <button onclick="quick('extreme')"><b>🏆 Défier le bot extrême</b><small>Toi contre les bots extrême, difficile et moyen</small></button>
       <button onclick="quick('cauchemar')"><b>💀 Mode cauchemar</b><small>Toi contre 3 bots extrêmes</small></button>
     </div>
     <strong>Ou compose ta table</strong>
@@ -918,11 +918,12 @@ const CARD=Object.fromEntries(CARDS.map(c=>[c.id,c]));
 const CAT_ICON={rattrapage:'🤝',armée:'⚔️',économie:'💰',dés:'🎲',calme:'☀️'};
 
 const BOTS={
-  rushpv:{key:'rushpv',name:'Bot facile',desc:'investit très peu et achète des faces PV au plus vite'},
-  armee:{key:'armee',name:'Bot moyen',desc:'des épées dès le début pour gagner les batailles et piller'},
-  science:{key:'science',name:'Bot moyen +',desc:'longue phase d’éco, science très haute, puis PV'},
-  adapt:{key:'adapt',name:'Bot difficile',desc:'lit les dés adverses et joue la contre-stratégie'},
-  ultime:{key:'ultime',name:'Bot très difficile',desc:'simule des dizaines de futurs avant chaque achat'},
+  rushpv:{key:'rushpv',name:'Bot facile',desc:'Bot facile (style tiré au hasard) : investit très peu et achète des faces PV au plus vite',hidden:true},
+  armee:{key:'armee',name:'Bot facile',desc:'Bot facile (style tiré au hasard) : des épées dès le début pour gagner les batailles et piller',hidden:true},
+  science:{key:'science',name:'Bot facile',desc:'Bot facile (style tiré au hasard) : longue phase d’éco, science très haute, puis PV',hidden:true},
+  facile:{key:'facile',name:'Bot facile',desc:'joue un style simple tiré au hasard : rush PV, rush armée ou rush science'},
+  adapt:{key:'adapt',name:'Bot moyen',desc:'lit les dés adverses et joue la contre-stratégie'},
+  ultime:{key:'ultime',name:'Bot difficile',desc:'simule des dizaines de futurs avant chaque achat'},
   apprenti:{key:'apprenti',name:'Bot extrême',desc:'réseau de neurones qui a appris en jouant des dizaines de milliers de parties contre lui-même'},
 };
 
@@ -956,12 +957,12 @@ function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.rando
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 /* ================= État ================= */
-let nPlayers=4, names=['Toi','Bot difficile','Bot moyen +','Bot moyen','Joueur 5','Joueur 6'], types=['human','adapt','science','armee','human','human'];
+let nPlayers=4, names=['Toi','Bot moyen','Bot facile 1','Bot facile 2','Joueur 5','Joueur 6'], types=['human','adapt','facile','facile','human','human'];
 let G=null;
 const P=()=>G.players[G.cur];
 const inL=p=>G.L.includes(p.i);
 function newPlayer(name,i,type){
-  return {i,name,color:PLAYER_COLORS[i],bot:type==='human'?null:BOTS[type],dice:[BASE_DIE.slice(),BASE_DIE.slice()],
+  return {i,name,color:PLAYER_COLORS[i],bot:type==='human'?null:BOTS[type==='facile'?['rushpv','armee','science'][Math.floor(Math.random()*3)]:type],dice:[BASE_DIE.slice(),BASE_DIE.slice()],
     res:{or:0,pierre:0,bois:0},hist:[],pv:0,sci:0,army:0,copy:0,gifts:[],rolled:null,rerollsLeft:0,useDice:null,prophecy:null,pipe:0,merc:false,mode:null};
 }
 
@@ -972,13 +973,14 @@ function renderSetup(){
     `<label><span class="dot" style="background:${PLAYER_COLORS[i]}"></span><input type="text" value="${esc(names[i])}" oninput="names[${i}]=this.value">
       <select onchange="types[${i}]=this.value;if(this.value!=='human'){names[${i}]=BOTS[this.value].name;renderSetup();}">
         <option value="human" ${types[i]==='human'?'selected':''}>Humain</option>
-        ${Object.values(BOTS).map(b=>`<option value="${b.key}" ${types[i]===b.key?'selected':''}>🤖 ${b.name}</option>`).join('')}
+        ${Object.values(BOTS).filter(b=>!b.hidden).map(b=>`<option value="${b.key}" ${types[i]===b.key?'selected':''}>🤖 ${b.name}</option>`).join('')}
       </select></label>`).join('');
 }
 function quick(kind){
   nPlayers=4;
-  const T={facile:['rushpv','armee','science'],difficile:['science','adapt','ultime'],extreme:['apprenti','ultime','adapt'],cauchemar:['apprenti','apprenti','apprenti']}[kind];
-  types=['human',...T]; names=[myName(),...T.map((t,k)=>BOTS[t].name+(kind==='cauchemar'?' '+(k+1):'')),names[4],names[5]];
+  const T={facile:['facile','facile','facile'],difficile:['facile','adapt','ultime'],extreme:['apprenti','ultime','adapt'],cauchemar:['apprenti','apprenti','apprenti']}[kind];
+  const dup=new Set(T).size<T.length;
+  types=['human',...T]; names=[myName(),...T.map((t,k)=>BOTS[t].name+(dup?' '+(k+1):'')),names[4],names[5]];
   document.getElementById('targetInput').value=40; startGame();
 }
 function startGame(){
@@ -1392,7 +1394,7 @@ function openSettings(){
     ${G?`<div class="field"><strong>Points de victoire pour gagner</strong><input type="number" min="1" value="${G.target}" onchange="G.target=Math.max(1,parseInt(this.value)||G.target);render()"></div>`:''}
     <div class="field"><strong>Bataille toutes les</strong><input type="number" min="1" value="${CONFIG.battleEvery}" onchange="CONFIG.battleEvery=Math.max(1,parseInt(this.value)||5);saveConfig();if(G)render()"> manches</div>
     <div class="field"><strong>PV de la 1re bataille (+1 à chaque bataille)</strong><input type="number" min="0" value="${CONFIG.battlePV}" onchange="CONFIG.battlePV=Math.max(0,parseInt(this.value)||0);saveConfig();if(G)render()"></div>
-    <div class="field"><strong>Réflexion du bot très difficile</strong><select onchange="CONFIG.level=+this.value;saveConfig()">${[[20,'Normal (20 futurs simulés)'],[40,'Fort (40)'],[80,'Élevée (80)'],[160,'Maximale (160, plus lent)']].map(([v,l])=>`<option value="${v}" ${CONFIG.level===v?'selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="field"><strong>Réflexion du bot difficile</strong><select onchange="CONFIG.level=+this.value;saveConfig()">${[[20,'Normal (20 futurs simulés)'],[40,'Fort (40)'],[80,'Élevée (80)'],[160,'Maximale (160, plus lent)']].map(([v,l])=>`<option value="${v}" ${CONFIG.level===v?'selected':''}>${l}</option>`).join('')}</select></div>
     <table class="cost-table"><tr><th></th><th>Face</th>${RES.map(r=>`<th>${icon(r,16)} ${RES_LABEL[r]}</th>`).join('')}</tr>
     ${ids.map(id=>`<tr><td>${faceHTML(id)}</td><td>${faceName(id)}</td>${RES.map(r=>`<td><input type="number" min="0" value="${COSTS[id][r]||0}" onchange="COSTS['${id}']['${r}']=Math.max(0,parseInt(this.value)||0);saveCosts();if(G)render()"></td>`).join('')}</tr>`).join('')}</table>
     <div class="close-row"><button class="btn ghost" onclick="COSTS=JSON.parse(JSON.stringify(DEFAULT_COSTS));CONFIG={...DEFAULT_CONFIG};saveCosts();saveConfig();openSettings();if(G)render()">Valeurs par défaut</button><button class="btn" onclick="closeModal()">OK</button></div>`);
@@ -1432,7 +1434,7 @@ function showWinner(){
     <button class="btn big" onclick="G=null;showSetup()">Nouvelle partie</button></div>`);
 }
 /* ================= Profil joueur et envoi des parties ================= */
-const APP_VERSION='2026-11-23-niveaux';
+const APP_VERSION='2026-11-23-niveaux2';
 const BACKEND_URL=(window.ATELIER_CONFIG&&window.ATELIER_CONFIG.backendUrl)||'';
 const ID_KEY='atelier-id-v1', HIST_KEY='atelier-hist-v1', QUEUE_KEY='atelier-queue-v1';
 const lsGet=(k,d)=>{ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } };
