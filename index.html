@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>L'Atelier des Dés — prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3ebdd; --panel:#fbf6ee; --ink:#2b2118; --muted:#7a6a58; --line:#e2d5c1;
+  --or:#d9a21b; --or-d:#9c7210; --pierre:#8b9099; --pierre-d:#5b616b; --bois:#9a6233; --bois-d:#6b3f1c;
+  --pv:#7c3aed; --mult:#c2410c; --sci:#0e7490; --army:#b91c1c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,sans-serif}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;margin:0}
+button{font:inherit;cursor:pointer;border:none;border-radius:10px}
+button:disabled{cursor:not-allowed;opacity:.4}
+.btn{background:var(--ink);color:#fff;padding:9px 16px;font-weight:600}
+.btn:hover:not(:disabled){background:#4a3a2c}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.ghost:hover:not(:disabled){background:#efe4d2}
+.btn.big{padding:12px 22px;font-size:16px}
+.btn.sm{padding:4px 10px;font-size:13px}
+input[type=text],input[type=number],select{font:inherit;padding:7px 9px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.wrap{max-width:1320px;margin:0 auto;padding:16px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+header.top h1{font-size:24px}
+header.top .sub{color:var(--muted);font-size:12px}
+.hidden{display:none!important}
+.dot{width:14px;height:14px;border-radius:50%;flex:none;display:inline-block}
+
+/* Setup */
+.setup{max-width:600px;margin:30px auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px}
+.setup h2{font-size:24px;margin-bottom:4px}
+.setup p{color:var(--muted);margin:0 0 18px}
+.count-row{display:flex;gap:8px;margin:8px 0 16px}
+.count-row button{width:48px;height:48px;font-size:19px;font-weight:700;background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+.count-row button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.names{display:grid;gap:8px;margin-bottom:16px}
+.names label{display:flex;align-items:center;gap:10px}
+.names input{flex:1}
+.field{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.field input{width:80px}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0 10px}
+.quick button{padding:14px;text-align:left;background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+.quick button:hover{border-color:var(--ink)}
+.quick b{display:block;font-size:15px}
+.quick small{color:var(--muted)}
+.btn.yellow{background:#f5c518;color:#2b2118}
+.btn.yellow:hover:not(:disabled){background:#e3b308}
+.setup-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.setup-top h2{margin:0;margin-right:auto}
+.who-box{font-size:13px;color:var(--muted);margin-bottom:14px}
+.who-box b{color:var(--ink)}
+.rules2 h3{font-size:16px;margin:14px 0 4px}
+.rules2 p,.rules2 li{margin:3px 0;line-height:1.5}
+.rules2 ul{margin:0;padding-left:20px}
+.rules2 .goal{background:#fff3c4;border:1px solid #f0d77a;border-radius:10px;padding:8px 12px;font-weight:600}
+.stats-tot{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 14px}
+.stats-tot div{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}
+.stats-tot b{display:block;font-family:Fraunces,serif;font-size:22px}
+.stats-tot small{color:var(--muted)}
+table.hist{width:100%;border-collapse:collapse;font-size:13px}
+table.hist th,table.hist td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line)}
+table.hist th{color:var(--muted);font-weight:600}
+table.hist td.win{color:#15803d;font-weight:700}
+.pseudo-in{width:100%;font-size:17px!important;padding:10px!important;margin:6px 0}
+.errmsg{color:#b91c1c;font-size:13px;min-height:18px}
+.smalllink{background:none;color:var(--muted);text-decoration:underline;padding:0;font-size:13px}
+.code{font-family:ui-monospace,monospace;font-size:18px;letter-spacing:2px;background:#fff;border:1px dashed var(--line);border-radius:8px;padding:4px 10px}
+
+/* Joueurs */
+.players{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:8px;margin-bottom:12px}
+.pcard{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:8px 11px;cursor:pointer;position:relative}
+.pcard.active{border-color:var(--pc);box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 25%,transparent)}
+.pcard .nm{display:flex;align-items:center;gap:7px;font-weight:700;font-size:13px}
+.pcard .pv{margin-left:auto;display:flex;align-items:center;gap:3px;font-family:Fraunces,serif;font-size:19px}
+.pcard .res{display:flex;gap:8px;margin-top:5px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.pcard .res span{display:flex;align-items:center;gap:2px}
+.pcard .res .sep{width:1px;background:var(--line);align-self:stretch}
+.pcard .bar{height:4px;background:#eadfcd;border-radius:3px;margin-top:6px;overflow:hidden}
+.pcard .bar i{display:block;height:100%;background:var(--pc)}
+.pcard .turn-tag{position:absolute;top:-9px;right:10px;background:var(--pc);color:#fff;font-size:10px;font-weight:700;padding:1px 8px;border-radius:10px}
+
+/* Carte événement */
+.cardback{position:absolute;inset:0;border-radius:12px;border:3px solid #fbf6ee;background:#7c2d12 repeating-linear-gradient(45deg,rgba(255,255,255,.09) 0 6px,transparent 6px 12px);box-shadow:0 3px 8px rgba(0,0,0,.25)}
+.cardback::after{content:'🎲';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2.2em;opacity:.85}
+.minipile{position:relative;width:46px;height:62px;flex:none;font-size:11px}
+.minipile .cardback:nth-child(1){transform:translate(-4px,4px) rotate(-4deg)}
+.minipile .cardback:nth-child(2){transform:translate(-2px,2px) rotate(-2deg)}
+.minicard{position:relative;width:46px;height:62px;flex:none;border-radius:8px;background:#fbf6ee;color:#2b2118;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 3px 8px rgba(0,0,0,.3);z-index:2}
+.minicard.tuck{animation:tuck 1.1s ease-in forwards}
+@keyframes tuck{0%{transform:none}40%{transform:translate(-30px,-26px) rotate(-12deg)}100%{transform:translate(-58px,6px) scale(.85);opacity:0;z-index:0}}
+.results{margin-top:6px;display:flex;flex-direction:column;gap:2px;font-size:12px}
+.results div{background:rgba(255,255,255,.1);border-radius:6px;padding:2px 8px}
+.results b{color:#fde68a}
+.reveal{position:fixed;inset:0;background:rgba(43,33,24,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:30;padding:20px}
+.reveal .stage{position:relative;width:250px;height:350px;font-size:18px}
+.reveal .stage .cardback:nth-child(1){transform:translate(-10px,10px) rotate(-4deg)}
+.reveal .stage .cardback:nth-child(2){transform:translate(-5px,5px) rotate(-2deg)}
+.flip{position:absolute;inset:0;perspective:1200px;transition:transform .5s ease}
+.flip .inner{position:absolute;inset:0;transition:transform .8s cubic-bezier(.3,.7,.3,1);transform-style:preserve-3d}
+.reveal.lift .flip{transform:translateY(-46px) scale(1.06)}
+.reveal.open .flip .inner{transform:rotateY(180deg)}
+.flip .face-b,.flip .face-f{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:12px}
+.flip .face-f{transform:rotateY(180deg);background:#fbf6ee;color:#2b2118;border:3px solid #e2d5c1;padding:18px 16px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.flip .face-f .big{font-size:38px;margin-top:4px}
+.flip .face-f h3{font-size:20px;line-height:1.15}
+.flip .face-f .cat{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.flip .face-f p{margin:0;font-size:13px;line-height:1.4}
+.flip .face-f .cat:last-child{margin-top:auto}
+.reveal .after{margin-top:40px;color:#fbf6ee;max-width:520px;width:100%;text-align:center;opacity:0;transition:opacity .4s}
+.reveal.done .after{opacity:1}
+.reveal .after .results div{background:rgba(43,33,24,.92);font-size:13px;padding:6px 10px;text-align:left}
+
+.event{display:flex;align-items:center;gap:12px;background:#2b2118;color:#fbf6ee;border-radius:14px;padding:10px 14px;margin-bottom:12px}
+.event .ico{font-size:24px}
+.event b{font-family:Fraunces,serif;font-size:16px}
+.event .t{font-size:13px;opacity:.9}
+.event .tag{margin-left:auto;font-size:11px;text-transform:uppercase;letter-spacing:.05em;background:rgba(255,255,255,.12);padding:3px 8px;border-radius:999px;white-space:nowrap}
+.event .bat{font-size:12px;opacity:.85;white-space:nowrap}
+
+.main{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}
+@media (max-width:960px){.main{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px}
+.turn-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.turn-head h2{font-size:20px}
+.turn-head .round{color:var(--muted);font-size:12px}
+.stock{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.stock .chip{display:flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 11px;font-weight:700;font-size:15px}
+.chip.flash{animation:flash .7s}
+@keyframes flash{0%{background:#fff2c4;transform:scale(1.12)}100%{background:#fff;transform:none}}
+
+.action-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px;background:#f1e7d6;border-radius:12px;margin-bottom:12px}
+.gain{font-size:13px}
+.gain b{font-family:Fraunces,serif}
+.placing-banner{background:#fff4d6;border:1.5px dashed var(--or);padding:9px 12px;border-radius:12px;display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+
+/* Pistes compactes */
+.tracks{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.trk{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-weight:600}
+.trk svg{width:18px;height:18px}
+.trk small{color:var(--muted);font-weight:500}
+.trk small.sm{display:none}
+.tip{position:relative;cursor:help;display:inline-flex}
+.tip:hover::after{content:attr(data-tip);position:absolute;left:0;top:130%;z-index:20;background:#2b2118;color:#fbf6ee;padding:9px 11px;border-radius:10px;font-size:12px;font-weight:500;line-height:1.45;white-space:pre-line;width:280px;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+.steps{display:flex;gap:3px}
+.steps i{width:8px;height:8px;border-radius:50%;background:#e2d5c1;display:block}
+.steps i.ok{background:var(--sci)}
+
+.dice{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:12px}
+.die{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.die.off{opacity:.4}
+.die .label{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.net{display:grid;grid-template-columns:repeat(3,44px);gap:5px}
+.net .face{width:44px;height:44px;font-size:12px}
+.net .face.hit{outline:3px solid var(--ink);outline-offset:1px}
+.net.pick .face{cursor:pointer}
+.net.pick .face:hover{outline:3px dashed var(--or);outline-offset:1px;transform:scale(1.06)}
+.die.pickdie{cursor:pointer;border:2px dashed var(--or)}
+.die.pickdie:hover{background:#fff8e6}
+
+/* Faces */
+.face{border-radius:10px;display:flex;align-items:center;justify-content:center;gap:2px;font-weight:700;border:2px solid;position:relative;transition:transform .1s;user-select:none}
+.face .n{font-family:Fraunces,serif}
+.face.big{width:78px;height:78px;border-radius:16px;font-size:22px;gap:4px;border-width:3px}
+.face.big svg{width:28px;height:28px}
+.face svg{width:17px;height:17px}
+.face.r-or{background:#fff6dc;border-color:var(--or);color:var(--or-d)}
+.face.r-pierre{background:#eef0f3;border-color:var(--pierre);color:var(--pierre-d)}
+.face.r-bois{background:#f6ebe0;border-color:var(--bois);color:var(--bois-d)}
+.face.t-pv{background:#f1eafe;border-color:var(--pv);color:var(--pv)}
+.face.t-mult{background:#fff0e8;border-color:var(--mult);color:var(--mult);font-size:1.2em}
+.face.t-sci{background:#e6f6f8;border-color:var(--sci);color:var(--sci)}
+.face.t-army{background:#fdeaea;border-color:var(--army);color:var(--army)}
+.face.blank{background:#f6f1e8;border-color:var(--line);color:var(--muted)}
+.face.rolling{animation:wob .12s infinite alternate}
+@keyframes wob{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}
+.die .face.big.can-reroll{cursor:pointer;box-shadow:0 0 0 3px #fff,0 0 0 6px var(--sci)}
+
+/* Boutique compacte */
+.shop h2{font-size:18px}
+.shop .hint{color:var(--muted);font-size:12px;margin:2px 0 8px}
+.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.sgroup{grid-column:1/-1;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:4px}
+.item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 2px;border-radius:10px;border:1.5px solid transparent;background:#fff;color:var(--ink)}
+.item:hover:not(:disabled){border-color:var(--ink)}
+.item .face{width:34px;height:34px;font-size:12px}
+.item .face svg{width:15px;height:15px}
+.cost{display:flex;gap:4px;justify-content:center;flex-wrap:wrap}
+.cost span{display:flex;align-items:center;gap:1px;font-weight:700;font-size:12px}
+.cost svg{width:13px;height:13px}
+.cost .cut{color:#15803d}
+.cost .up{color:#b91c1c}
+.extra{margin-top:10px;padding:8px;border:1.5px dashed var(--line);border-radius:10px;font-size:12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.extra select{padding:3px 6px}
+
+/* Journal */
+.logbox{margin-top:14px;border-top:1px solid var(--line);padding-top:8px}
+.logbox .lh{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;font-size:13px;color:var(--muted);user-select:none}
+.log{max-height:190px;overflow:auto;font-size:12px;color:var(--muted);margin-top:6px}
+.log div{padding:3px 0;border-bottom:1px solid #efe5d5}
+.log b{color:var(--ink)}
+
+/* Fenêtres */
+.modal-bg{position:fixed;inset:0;background:rgba(43,33,24,.45);display:flex;align-items:center;justify-content:center;padding:18px;z-index:40}
+.modal{background:var(--panel);border-radius:18px;padding:20px;max-width:780px;width:100%;max-height:90vh;overflow:auto}
+.modal h2{margin-bottom:10px}
+.modal .close-row{display:flex;justify-content:flex-end;margin-top:14px;gap:10px}
+.choices{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.choices button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 16px;background:#fff;border:1.5px solid var(--line);color:var(--ink);min-width:110px}
+.choices button:hover{border-color:var(--ink)}
+.choices button.on{border-color:var(--ink);background:#f1e7d6}
+.cost-table{width:100%;border-collapse:collapse;font-size:13px}
+.cost-table th{text-align:left;font-size:11px;color:var(--muted);font-weight:600;padding:5px}
+.cost-table td{padding:4px 5px;border-top:1px solid var(--line)}
+.cost-table input{width:56px;padding:4px 6px}
+.cost-table .face{width:32px;height:32px;font-size:11px}
+.rules li{margin-bottom:6px}
+.cardlist{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:13px}
+.cardlist div{padding:4px 0;border-bottom:1px solid var(--line)}
+.cardlist h3{grid-column:1/-1;font-size:14px;margin-top:8px}
+.winner{text-align:center;padding:16px}
+.winner h2{font-size:28px;margin-bottom:12px}
+.rank{max-width:380px;margin:0 auto 18px;text-align:left}
+.rank div{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.rank .s{margin-left:auto;font-family:Fraunces,serif;font-size:19px}
+.battle-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.battle-row .a{margin-left:auto;font-family:Fraunces,serif;font-size:19px;display:flex;align-items:center;gap:4px}
+
+/* ======== Mobile ======== */
+@media (max-width:640px){
+  body{font-size:13px}
+  .wrap{padding:8px}
+  header.top{margin-bottom:6px;gap:6px;flex-wrap:nowrap}
+  header.top h1{font-size:17px;white-space:nowrap}
+  header.top .sub{display:none}
+  header.top .hb{padding:5px 8px;font-size:15px}
+  .lbl{display:none}
+  .setup{margin:8px auto;padding:16px}
+  .quick{grid-template-columns:1fr}
+  .players{display:flex;gap:5px;overflow-x:auto;margin-bottom:6px;padding-top:7px}
+  .pcard{flex:1 1 0;min-width:0;padding:4px 6px;border-radius:10px}
+  .pcard .pn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .pcard .be{display:none}
+  .trk small.lg,.trk .tracknext{display:none}
+  .trk small.sm{display:inline}
+  .event .t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .pcard .nm{font-size:11px;gap:4px}
+  .pcard .nm .dot{width:9px;height:9px}
+  .pcard .pv{font-size:15px;margin-left:auto;flex:none}
+  .pcard .pv svg{width:13px;height:13px}
+  .pcard .res{gap:4px;margin-top:2px;font-size:10px}
+  .pcard .res{display:grid;grid-template-columns:repeat(3,1fr);gap:1px 3px;font-size:10px}
+  .pcard .res .sep{display:none}
+  .pcard .res svg{width:11px;height:11px}
+  .stats-tot{grid-template-columns:repeat(2,1fr)}
+  .names input{min-width:0;width:0}
+  .names select{max-width:44%}
+  table.hist .opp{display:none}
+  .pcard .bar{margin-top:3px;height:3px}
+  .pcard .turn-tag{font-size:9px;top:-8px;padding:0 6px}
+  .event{padding:6px 9px;gap:8px;margin-bottom:6px;border-radius:10px;flex-wrap:wrap}
+  .event .minipile,.event .minicard{width:28px;height:38px;font-size:14px}
+  .event .minicard{margin-left:-22px!important}
+  .event b{font-size:13px}
+  .event .t{font-size:11px;line-height:1.3}
+  .event .bat{font-size:10px;order:5;width:100%;white-space:normal}
+  .event .tag{font-size:9px;padding:2px 6px}
+  .results{font-size:10px}
+  .main{gap:6px}
+  .panel{padding:8px;border-radius:12px}
+  .turn-head{margin-bottom:6px;gap:6px}
+  .turn-head h2{font-size:14px}
+  .turn-head .round{display:none}
+  .stock{gap:3px}
+  .stock .chip{padding:1px 7px;font-size:12px;gap:3px}
+  .stock .chip svg{width:14px;height:14px}
+  .action-bar{padding:6px;gap:6px;margin-bottom:6px;border-radius:10px}
+  .btn.big{padding:8px 12px;font-size:13px}
+  #btnEnd{padding:7px 10px;font-size:12px}
+  .gain{font-size:11px;flex:1 1 100%;order:3}
+  .tracks{gap:5px;margin-bottom:6px}
+  .trk{padding:2px 8px;font-size:11px;gap:4px}
+  .trk svg{width:14px;height:14px}
+  .trk small{font-size:10px}
+  .steps i{width:5px;height:5px}
+  .btn.sm{padding:3px 8px;font-size:11px}
+  .tip:hover::after{width:220px;font-size:11px}
+  .placing-banner{padding:5px 8px;margin-bottom:6px;font-size:11px}
+  .dice{display:flex;gap:5px;grid-template-columns:none}
+  .die{flex:1 1 0;min-width:0;padding:5px 3px;gap:4px;border-radius:10px}
+  .die .label{display:none}
+  .net{grid-template-columns:repeat(3,1fr);gap:2px;width:100%;max-width:84px}
+  .net .face{width:auto;height:auto;aspect-ratio:1;font-size:9px;border-width:1.5px;border-radius:6px;gap:0}
+  .net .face svg{width:9px;height:9px}
+  .net .face.hit{outline-width:2px}
+  .face.big{width:42px;height:42px;font-size:14px;border-radius:10px;border-width:2px}
+  .face.big svg{width:16px;height:16px}
+  .logbox{margin-top:6px;padding-top:4px}
+  .log{max-height:110px}
+  .shop h2,.shop .hint{display:none}
+  .sgrid{grid-template-columns:repeat(8,1fr);gap:3px}
+  .sgroup{display:none}
+  .item{padding:3px 1px;gap:1px;border-radius:7px}
+  .item .face{width:30px;height:30px;font-size:10px;border-width:1.5px;border-radius:7px}
+  .item .face svg{width:11px;height:11px}
+  .cost{gap:1px}
+  .cost span{font-size:9px}
+  .cost svg{width:9px;height:9px}
+  .extra{margin-top:5px;padding:5px;font-size:11px}
+  .modal{padding:14px;border-radius:14px}
+  .choices button{min-width:80px;padding:8px}
+  .reveal .stage{width:200px;height:280px;font-size:14px}
+  .flip .face-f{padding:12px 10px;gap:6px}
+  .flip .face-f h3{font-size:17px}
+  .flip .face-f .big{font-size:30px}
+  .flip .face-f p{font-size:12px}
+  .reveal .after{margin-top:24px}
+}
+@media (max-width:640px) and (max-height:700px){ .event .t{display:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div><h1>L'Atelier des Dés</h1><div class="sub">Prototype de dé-building · titre provisoire</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost hb" onclick="openRules()" title="Règles">📖<span class="lbl"> Règles</span></button>
+      <button class="btn ghost hb" id="btnStats" onclick="openStats()" title="Mes stats">📊<span class="lbl"> Mes stats</span></button>
+      <button class="btn ghost hb" onclick="openCards()" title="Cartes">🃏<span class="lbl"> Cartes</span></button>
+      <button class="btn ghost hb" onclick="openSettings()" title="Réglages">⚙️<span class="lbl"> Réglages</span></button>
+      <button class="btn ghost hb" onclick="backToSetup()" title="Nouvelle partie">↺<span class="lbl"> Nouvelle partie</span></button>
+    </div>
+  </header>
+
+  <section id="setup" class="setup">
+    <div class="setup-top"><h2>Nouvelle partie</h2><button class="btn yellow" onclick="openRules()">📖 Règles</button></div>
+    <div class="who-box" id="whoBox"></div>
+    <p>Chaque joueur commence avec 2 dés : 1 face +1 PV, 2 faces +1 pierre, 3 faces +1 bois. Une carte événement est révélée après chaque bataille et dure une manche.</p>
+    <div class="quick">
+      <button onclick="quick('ultime')"><b>🏆 Défier l'Ultime</b><small>Toi contre l'Ultime, l'Adaptatif et un Rush science</small></button>
+      <button onclick="quick('cauchemar')"><b>💀 Mode cauchemar</b><small>Toi contre 3 Ultimes</small></button>
+    </div>
+    <strong>Ou compose ta table</strong>
+    <div class="count-row" id="countRow"></div>
+    <div class="names" id="names"></div>
+    <div class="field"><strong>Points de victoire pour gagner</strong><input type="number" id="targetInput" min="1" value="40"></div>
+    <div style="display:flex;justify-content:flex-end"><button class="btn big" onclick="startGame()">Lancer la partie</button></div>
+  </section>
+
+  <section id="game" class="hidden">
+    <div class="players" id="players"></div>
+    <div class="event" id="event"></div>
+    <div class="main">
+      <div class="panel">
+        <div class="turn-head">
+          <span class="dot" id="curDot" style="width:16px;height:16px"></span>
+          <h2 id="curName"></h2>
+          <span class="round" id="roundLbl"></span>
+          <div class="stock" id="stock"></div>
+        </div>
+        <div class="action-bar">
+          <button class="btn big" id="btnRoll" onclick="mainAction()">🎲 Lancer les dés</button>
+          <div class="gain" id="gain"></div>
+          <button class="btn ghost" id="btnEnd" style="margin-left:auto" onclick="endTurn()">Fin du tour →</button>
+        </div>
+        <div class="tracks" id="tracks"></div>
+        <div id="placing" class="placing-banner hidden"></div>
+        <div class="dice" id="dice"></div>
+        <div class="logbox">
+          <div class="lh" onclick="toggleLog()"><span id="logArrow">▾</span> Journal</div>
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+      <aside class="panel shop">
+        <h2>Boutique</h2>
+        <p class="hint" id="shopHint"></p>
+        <div class="sgrid" id="shop"></div>
+        <div id="extras"></div>
+      </aside>
+    </div>
+  </section>
+</div>
+<div id="modal" class="modal-bg hidden"><div class="modal" id="modalBody"></div></div>
+
+<script src="config.js"></script>
+<script>
+// Moteur de jeu (identique au simulateur) + bots, empaquetés pour le navigateur
+const ENGINE=(function(){
+  const m1={exports:{}}; (function(module){ // Simulateur v2 : science, armée, relances, batailles, dés progressifs
+const FACES = {
+  bois1:{t:'res',r:'bois',n:1}, bois2:{t:'res',r:'bois',n:2}, bois3:{t:'res',r:'bois',n:3},
+  pierre1:{t:'res',r:'pierre',n:1}, pierre2:{t:'res',r:'pierre',n:2},
+  or1:{t:'res',r:'or',n:1}, or2:{t:'res',r:'or',n:2},
+  pv1:{t:'pv',n:1}, pv2:{t:'pv',n:2}, pv3:{t:'pv',n:3},
+  x2:{t:'mult',n:2}, x3:{t:'mult',n:3}, x4:{t:'mult',n:4},
+  sci1:{t:'sci',n:1}, sci2:{t:'sci',n:2}, epee1:{t:'army',n:1}, epee2:{t:'army',n:2},
+};
+const DEF_COSTS = {
+  bois2:{bois:2}, bois3:{bois:4}, pierre1:{bois:2}, pierre2:{bois:2,pierre:2},
+  or1:{pierre:2}, or2:{pierre:3,or:1}, pv1:{bois:3,pierre:1}, pv2:{pierre:2,or:1}, pv3:{pierre:1,or:3},
+  x2:{pierre:2,or:2}, x3:{pierre:2,or:4}, die:{bois:2,pierre:2,or:1},
+  trib_bois:{bois:4,pierre:1}, trib_pierre:{bois:3,pierre:3}, trib_or:{pierre:3,or:2},
+  sci1:{bois:2,pierre:1}, sci2:{bois:2,pierre:2,or:1}, epee1:{bois:2,pierre:1}, epee2:{bois:2,pierre:2,or:1},
+};
+let COSTS=DEF_COSTS, CFG={target:30,battleEvery:5,battlePV:4,sci:[3,6,12,16,20]};
+const RES=['or','pierre','bois'], RV={bois:1,pierre:2,or:3};
+let BASE=['or1','pierre1','pierre1','bois1','bois1','bois1'];
+// variante « les +2 deviennent +3, le +3 PV devient +4 »
+if(typeof process!=='undefined' && process.env && process.env.FACE3==='1'){ FACES.bois2.n=3; FACES.pierre2.n=3; FACES.or2.n=3; FACES.pv2.n=3; FACES.pv3.n=4; FACES.sci2.n=3; FACES.epee2.n=3; }
+const F=id=>id.startsWith('T|')?{t:'trib',r:id.split('|')[1],n:1,owner:+id.split('|')[2]}:FACES[id];
+let rnd=Math.random;
+let RS=0; function seed(s){ RS=s; rnd=()=>{RS|=0;RS=RS+0x6D2B79F5|0;let t=Math.imul(RS^RS>>>15,1|RS);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}; }
+
+const rerollsOf=p=>p.sci>=CFG.sci[2]?2:p.sci>=CFG.sci[0]?1:0;
+const maxDice=p=>p.sci>=CFG.sci[4]?99:p.sci>=CFG.sci[3]?4:p.sci>=CFG.sci[1]?3:2;
+function fval(id){ const f=F(id);
+  if(f.t==='res') return f.n*RV[f.r]; if(f.t==='pv') return f.n*4; if(f.t==='mult') return f.n*3;
+  if(f.t==='sci'||f.t==='army') return f.n*2.5; return -1; }
+const dieCost=p=>Object.fromEntries(Object.entries(COSTS.die).map(([r,v])=>[r,v*(p.dice.length-1)]));
+const cost=(p,id)=>{ const c={...(id==='die'?dieCost(p):COSTS[id])}; if(!EV||id==='die') return c;
+  if(EV==='soldes'||EV==='inflation'){ const ks=RES.filter(r=>c[r]>0).sort((a,b)=>c[b]-c[a]||RV[a]-RV[b]); if(ks.length) c[ks[0]]=Math.max(0,c[ks[0]]+(EV==='soldes'?-1:1)); }
+  if(EV==='forge'&&FACES[id]&&FACES[id].t==='army'&&c.pierre) c.pierre--;
+  if(EV==='academie'&&FACES[id]&&FACES[id].t==='sci'&&c.bois) c.bois--;
+  return c; };
+const afford=(p,c)=>RES.every(r=>p.res[r]>=(c[r]||0));
+const pay=(p,c)=>RES.forEach(r=>p.res[r]-=(c[r]||0));
+const worst=p=>{let b=null;p.dice.forEach((d,di)=>d.forEach((id,fi)=>{if(id.startsWith('T|'))return;const v=fval(id);if(!b||v<b.v)b={di,fi,v};}));return b;};
+const ok=(p,id)=>afford(p,cost(p,id))&&worst(p)&&fval(id)>worst(p).v;
+const first=(p,ids)=>ids.find(id=>ok(p,id));
+const canDie=p=>p.dice.length<maxDice(p)&&afford(p,dieCost(p));
+
+const PV=['pv3','pv2','pv1'], ECO=['or2','pierre2','or1','bois3','pierre1','bois2'];
+// défense : si une bataille arrive bientôt et qu'un adversaire a au moins autant d'armée, on achète une épée
+function defend(p,g){ const opp=Math.max(...g.players.filter(q=>q!==p).map(q=>q.army)); const left=CFG.battleEvery-((g.round-1)%CFG.battleEvery);
+  if(opp>0 && p.army<=opp && left<=2) return first(p,['epee2','epee1']); return null; }
+const STRATS={
+  'Rush PV': p=>first(p,PV),
+  'Full éco': (p,g)=> g.round<=p.param ? first(p,ECO) : (first(p,['x3','x2'].filter(()=>countT(p,'mult')<p.dice.length-1))||first(p,PV)),
+  'Éco + science': (p,g)=>{ if(canDie(p)) return 'die';
+     if(g.round<=p.param) return (p.sci<12?first(p,['sci2','sci1']):null)||first(p,ECO);
+     return first(p,PV); },
+  'Full armée': (p,g)=> g.round<=p.param ? first(p,['epee2','epee1'])||first(p,ECO) : first(p,PV),
+  'Armée + PV': (p,g)=> first(p,['pv3','pv2'])|| (g.round<=p.param? first(p,['epee2','epee1']):first(p,['pv1'])),
+  'Éco + défense': (p,g)=> defend(p,g) || (g.round<=p.param ? first(p,ECO) : first(p,PV)),
+  'Science + défense': (p,g)=>{ const d=defend(p,g); if(d) return d; if(canDie(p)) return 'die';
+     if(g.round<=p.param) return (p.sci<CFG.sci[2]?first(p,['sci2','sci1']):null)||first(p,ECO); return first(p,PV); },
+  'Tributs': (p,g)=>{ if(g.round<=p.param){ for(const t of ['trib_or','trib_pierre','trib_bois']) if(afford(p,COSTS[t])) return t; return first(p,ECO);} return first(p,PV); },
+};
+const countT=(p,t)=>p.dice.flat().filter(id=>F(id).t===t).length;
+
+// ---------- Cartes événement ----------
+const DECK=['renfort','atelier','pipes','espion','heros','mecene','eureka','seconde','emprunt','destin','recensement',
+ 'bataille','mobilisation','pacte','grande','desertion','mercenaires','guerilla',
+ 'ruee','incendie','effondrement','soldes','inflation','marche','penurie','filon_or','filon_pierre','surplus_bois','greve','forge','academie',
+ 'age','panne','relance','petites','tempete','festival','prophetie','revanche',
+ 'repos','beau','carriere','pepite','decouverte','recrutement'];
+let EV=null;
+const r6=()=>Math.floor(rnd()*6);
+const avgVal=d=>d.reduce((s,id)=>s+fval(id),0)/6;
+const genomeOf=p=>(module.exports.GENOMES||{})[p.s];
+function sciCross(p,s0,g){
+  if(CFG.freeDice) CFG.freeDice.forEach(t=>{ if(s0<t&&p.sci>=t) p.dice.push(BASE.slice()); });
+  if(CFG.copyAt && s0<CFG.copyAt && p.sci>=CFG.copyAt) copyBest(p,g);
+  if(CFG.x4At && s0<CFG.x4At && p.sci>=CFG.x4At){ const S=STRATS[p.s]; const w=S&&S.place?S.place(p,'x4',g):worst(p); if(w) p.dice[w.di][w.fi]='x4'; }
+}
+function copyBest(p,g){ const S=STRATS[p.s]; if(S&&S.choose){ const ids=[...new Set(g.players.filter(q=>q!==p).flatMap(q=>q.dice.flat()).filter(id=>id!=='x4'&&!id.startsWith('T|')))]; const c=S.choose(p,ids,g); if(c&&c.v>-1e9) p.dice[c.di][c.fi]=c.id; return; } let b=null; g.players.forEach(q=>{ if(q===p) return; q.dice.flat().forEach(id=>{ if(id==='x4'||id.startsWith('T|')) return; if(!b||fval(id)>fval(b)) b=id; }); });
+  const w=worst(p); if(b&&w&&fval(b)>w.v) p.dice[w.di][w.fi]=b; }
+function placeFree(p,id,g){ const S=STRATS[p.s]; if(S&&S.place&&g){ const s=S.place(p,id,g); if(s) p.dice[s.di][s.fi]=id; return; } const w=worst(p); if(w&&fval(id)>w.v) p.dice[w.di][w.fi]=id; }
+function gainFace(p,id,g){ const f=F(id); if(f.t==='mult'||f.t==='trib') return; const s0=p.sci;
+  if(f.t==='res') p.res[f.r]+=f.n; else if(f.t==='pv') p.pv+=f.n; else if(f.t==='sci'){ p.sci+=f.n; sciCross(p,s0,g); } else if(f.t==='army') p.army+=f.n; }
+function battle(g){
+  const max=Math.max(...g.players.map(q=>q.army));
+  if(max>0){ let val=CFG.battleLinear?CFG.battlePV+(g.battleNo||0):CFG.battleDouble?CFG.battlePV*Math.pow(2,g.battleNo||0):CFG.battlePV;
+    if(g.grande){ val*=2; } const W=g.players.filter(q=>q.army===max); W.forEach(q=>{q.pv+=val;q.battlePV+=val;});
+    if(W.length===1 && !g.pacte){ const w=W[0], o=g.players.filter(q=>q!==w), mn=Math.min(...o.map(q=>q.army)), V=o.filter(q=>q.army===mn);
+      const r=RES.map(r=>[r,V.reduce((s,q)=>s+q.res[r],0)*RV[r]]).sort((a,b)=>b[1]-a[1])[0][0];
+      V.forEach(q=>{ w.res[r]+=q.res[r]; w.loot+=q.res[r]*RV[r]; q.res[r]=0; }); } }
+  g.grande=false; g.pacte=false;
+  if(CFG.resetArmy) g.players.forEach(q=>q.army=0);
+  g.battleNo=(g.battleNo||0)+1;
+}
+function newGame(strats,params){
+  return {round:1,players:strats.map((s,i)=>({s,param:(params||[])[i]||0,i,dice:[BASE.slice(),BASE.slice()],res:{or:0,pierre:0,bois:0},pv:0,sci:0,army:0,battlePV:0,loot:0})),deck:[],snap:null,hist:[],ev:null,L:[]};
+}
+function startRound(g){
+  const P=g.players;
+    // --- carte de la manche
+    EV=null; g.ev=null;
+    if(CFG.events && (!CFG.cardAfterBattle || (g.round>1 && (g.round-1)%CFG.battleEvery===0))){ if(!g.deck.length){ g.deck=DECK.slice(); for(let i=g.deck.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[g.deck[i],g.deck[j]]=[g.deck[j],g.deck[i]];} } EV=g.deck.pop(); g.ev=EV; }
+    const minPV=Math.min(...P.map(q=>q.pv)), L=P.filter(q=>q.pv===minPV);
+    const maxPV=Math.max(...P.map(q=>q.pv)), H=P.find(q=>q.pv===maxPV);
+    switch(EV){
+      case 'renfort': L.forEach(q=>{ const S=STRATS[q.s]; if(S&&S.choose){ const c=S.choose(q,['sci1','epee1','or1'],g); if(c) q.dice[c.di][c.fi]=c.id; return; } const G=genomeOf(q)||{}; placeFree(q, G.army&&G.army!=='none'?'epee1': q.sci<12?'sci1':'or1', g); }); break;
+      case 'atelier': L.forEach(q=>placeFree(q,'x2',g)); break;
+      case 'espion': L.forEach(q=>copyBest(q,g)); break;
+      case 'heros': L.forEach(q=>q.pv+=3); break;
+      case 'mecene': L.forEach(q=>RES.forEach(r=>q.res[r]++)); break;
+      case 'eureka': L.forEach(q=>{const s0=q.sci;q.sci+=2;sciCross(q,s0,g);}); break;
+      case 'emprunt': L.forEach(q=>{ let bd=null; P.forEach(o=>{ if(o===q) return; o.dice.forEach(d=>{ if(!bd||avgVal(d)>avgVal(bd)) bd=d; }); }); if(bd) gainFace(q,bd[r6()],g); }); break;
+      case 'destin': { const d=H.dice.slice().sort((a,b)=>avgVal(b)-avgVal(a))[0]; const id=d[r6()]; P.forEach(q=>{ if(q!==H) gainFace(q,id,g); }); break; }
+      case 'recensement': { const m=Math.min(...P.map(q=>q.dice.length)); P.filter(q=>q.dice.length===m).forEach(q=>{const s0=q.sci;q.sci+=2;sciCross(q,s0,g);}); break; }
+      case 'ruee': P.forEach(q=>q.res.or=0); break;
+      case 'incendie': P.forEach(q=>q.res.bois=0); break;
+      case 'effondrement': P.forEach(q=>q.res.pierre=0); break;
+      case 'desertion': { const m=Math.max(...P.map(q=>q.army)); if(m>0) P.filter(q=>q.army===m).forEach(q=>q.army=Math.floor(q.army/2)); break; }
+      case 'guerilla': { const mx=P.slice().sort((a,b)=>b.army-a.army)[0], mn=P.slice().sort((a,b)=>a.army-b.army)[0];
+        if(mx.army>mn.army){ let k=2; for(const r of ['or','pierre','bois']) while(k>0&&mx.res[r]>0){mx.res[r]--;mn.res[r]++;k--;} } break; }
+      case 'revanche': { const rolls=P.map(q=>{ const d=q.dice.slice().sort((a,b)=>b.filter(x=>F(x).n===1).length-a.filter(x=>F(x).n===1).length)[0]; return d[r6()]; });
+        const m=Math.min(...rolls.map(id=>F(id).n)); P.forEach((q,i)=>{ if(F(rolls[i]).n===m) gainFace(q,rolls[i],g); }); break; }
+      case 'pacte': g.pacte=true; break;
+      case 'grande': g.grande=true; break;
+      case 'beau': P.forEach(q=>q.res.bois++); break;
+      case 'carriere': P.forEach(q=>q.res.pierre++); break;
+      case 'pepite': P.forEach(q=>q.res.or++); break;
+      case 'decouverte': P.forEach(q=>{const s0=q.sci;q.sci++;sciCross(q,s0,g);}); break;
+      case 'recrutement': P.forEach(q=>q.army++); break;
+    }
+
+  g.L=L;
+}
+function rollPhase(p,g){
+  const P=g.players, L=g.L; EV=g.ev;
+
+      // --- lancer
+      let use=p.dice.map((_,i)=>i);
+      if(EV==='tempete' && p.dice.length>2) use=use.sort((a,b)=>avgVal(p.dice[b])-avgVal(p.dice[a])).slice(0,2);
+      const roll=p.dice.map(()=>r6()); let fixed=-1;
+      if(EV==='pipes' && L.includes(p)){ let best=null; use.forEach(i=>p.dice[i].forEach((id,fi)=>{ const gain=fval(id)-fval(p.dice[i][roll[i]]); if(F(id).t!=='mult'&&(!best||gain>best.g)) best={i,fi,g:gain}; })); if(best){ roll[best.i]=best.fi; fixed=best.i; } }
+      let rr=rerollsOf(p)+(EV==='seconde'&&L.includes(p)?2:0)+(EV==='relance'?1:0);
+      const S=STRATS[p.s];
+      if(S&&S.reroll&&!g.rollout){ for(;rr>0;rr--){ const bi=S.reroll(p,g,roll,use,fixed,rr); if(bi<0) break; roll[bi]=r6(); } }
+      else defaultRerolls(p,roll,use,fixed,rr);
+      applyRoll(p,g,roll,use);
+}
+function defaultRerolls(p,roll,use,fixed,rr){
+      for(;rr>0;rr--){ let bi=-1,bd=0; use.forEach(i=>{ if(i===fixed) return; const d=p.dice[i], dv=avgVal(d)-fval(d[roll[i]]); if(dv>bd){bd=dv;bi=i;} }); if(bi<0) break; roll[bi]=r6(); }
+}
+function applyRoll(p,g,roll,use){
+      const P=g.players; EV=g.ev;
+      let mult=1; const b={or:0,pierre:0,bois:0,pv:0,sci:0,army:0}; const seen={}; let dbl=false;
+      use.forEach(i=>{ const id=p.dice[i][roll[i]], f=F(id); if(seen[id]) dbl=true; seen[id]=1;
+        if(f.t==='mult'){ if(EV!=='panne') mult*=f.n; return; } if(f.t==='trib') return;
+        let n=f.n; if(EV==='petites' && n===1 && f.t!=='pv') n=2;
+        if(f.t==='res'){ if((EV==='filon_or'&&f.r==='or')||(EV==='filon_pierre'&&f.r==='pierre')||(EV==='surplus_bois'&&f.r==='bois')) n*=2; if(EV==='greve'&&f.r==='bois') n=0; b[f.r]+=n; }
+        else b[f.t]+=n; });
+      const k=EV==='age'?2:1, s0=p.sci, gains={};
+      RES.forEach(r=>{ gains[r]=b[r]*mult*k; p.res[r]+=gains[r]; }); p.pv+=b.pv*mult; p.sci+=b.sci*mult*k; p.army+=b.army*mult*k*(EV==='mobilisation'?2:1);
+      if(EV==='festival' && dbl) p.res.or+=2;
+      if(EV==='prophetie'){ const exp={}; RES.forEach(r=>exp[r]=use.reduce((s,i)=>s+p.dice[i].reduce((t,id)=>{const f=F(id);return t+(f.t==='res'&&f.r===r?f.n:0);},0),0));
+        const pred=RES.slice().sort((a,b)=>exp[b]-exp[a])[0], mx=Math.max(...RES.map(r=>gains[r])); if(mx>0&&gains[pred]===mx) p.res[pred]+=2; }
+      sciCross(p,s0,g);
+
+}
+function buyPhase(p,g){
+  const P=g.players; EV=g.ev;
+        // --- achats
+      if(EV==='penurie') return;
+      if(EV==='marche') while(p.res.bois>=4){ p.res.bois-=2; p.res.or++; }
+      if(EV==='mercenaires'){ const S=STRATS[p.s]; const G=genomeOf(p); if(p.res.or>=2 && (S&&S.merc ? S.merc(p,g) : G&&G.army!=='none')){ p.res.or-=2; p.army+=2; } }
+      for(let k2=0;k2<30;k2++){
+        const rr=STRATS[p.s](p,g); if(!rr) break; const id=typeof rr==='object'?rr.id:rr; if(!afford(p,cost(p,id))) break;
+        if(typeof rr==='object'){ pay(p,cost(p,id)); p.dice[rr.di][rr.fi]=id; if(!g.rollout){(p.bought=p.bought||{})[id]=(p.bought[id]||0)+1;} continue; }
+        const w=worst(p); if(!w||fval(id)<=w.v) break; pay(p,cost(p,id)); p.dice[w.di][w.fi]=id; if(!g.rollout){(p.bought=p.bought||{})[id]=(p.bought[id]||0)+1;}
+      }
+}
+function endRound(g){
+  const P=g.players; EV=g.ev;
+  if(g.round%CFG.battleEvery===0 || EV==='bataille') battle(g);
+  if(g.round===(CFG.snapRound||10)) g.snap=P.map(q=>q.pv);
+  g.hist.push(P.map(q=>q.pv));
+  if(P.some(q=>q.pv>=CFG.target) || g.round>=150) return true;
+  g.round++; return false;
+}
+function result(g){ const best=Math.max(...g.players.map(q=>q.pv));
+  return {winners:g.players.filter(q=>q.pv===best).map(q=>q.i),rounds:g.round,players:g.players,snap:g.snap,hist:g.hist}; }
+function play(strats,params){
+  const g=newGame(strats,params);
+  for(;;){ startRound(g); for(const p of g.players){ rollPhase(p,g); buyPhase(p,g); } if(endRound(g)) break; }
+  return result(g);
+}
+function cloneGame(g){
+  return {...g, rollout:true, players:g.players.map(q=>({...q,bought:undefined,dice:q.dice.map(d=>d.slice()),res:{...q.res}})), deck:g.deck.slice(), hist:[], L:[]};
+}
+// reprend une partie au milieu du tour du joueur pi (ses achats continuent sauf si skipBuy), puis la joue jusqu'au bout
+function continueFrom(g,pi,skipBuy){
+  const saveEV=EV; g.L=g.players.filter(q=>q.pv===Math.min(...g.players.map(x=>x.pv)));
+  if(!skipBuy) buyPhase(g.players[pi],g);
+  for(let j=pi+1;j<g.players.length;j++){ rollPhase(g.players[j],g); buyPhase(g.players[j],g); }
+  if(!endRound(g)) for(;;){ startRound(g); for(const p of g.players){ rollPhase(p,g); buyPhase(p,g); } if(endRound(g)) break; }
+  EV=saveEV; return result(g);
+}
+module.exports={getRS:()=>RS,setRS:v=>{RS=v;},applyRoll:(p,g,roll,use)=>applyRoll(p,g,roll,use),defaultRerolls:(p,roll,use,fixed,rr)=>defaultRerolls(p,roll,use,fixed,rr),r6:()=>r6(),setFaceN:(id,n)=>{FACES[id].n=n;},setEV:e=>{EV=e;},worst:p=>worst(p),fval:id=>fval(id),cloneGame,continueFrom,newGame,setBase:b=>BASE=b,play,STRATS,seed,setCosts:c=>COSTS=c,setCfg:c=>Object.assign(CFG,c),DEF_COSTS,CFG};
+// ---- exports pour les bots génétiques
+module.exports.H={first:(p,ids)=>first(p,ids),afford,F,countT,cost:(p,id)=>cost(p,id),get COSTS(){return COSTS},CFG};
+ })(m1); const M=m1.exports;
+  const m2={exports:{}}; (function(module){ // Bot « Ultime » : évalue chaque achat possible en projetant la fin de partie.
+// Code générique : marche avec le simulateur (sim3) et pourra être porté dans le prototype.
+const FT={bois1:['bois',1],bois2:['bois',2],bois3:['bois',3],pierre1:['pierre',1],pierre2:['pierre',2],or1:['or',1],or2:['or',2],
+  pv1:['pv',1],pv2:['pv',2],pv3:['pv',3],sci1:['sci',1],sci2:['sci',2],epee1:['army',1],epee2:['army',2],x2:['mult',2],x3:['mult',3],x4:['mult',4]};
+if(typeof process!=='undefined' && process.env && process.env.FACE3==='1'){ FT.bois2=['bois',3]; FT.pierre2=['pierre',3]; FT.or2=['or',3]; FT.pv2=['pv',3]; FT.pv3=['pv',4]; FT.sci2=['sci',3]; FT.epee2=['army',3]; }
+const BUY=['or2','or1','pierre2','pierre1','bois3','bois2','pv3','pv2','pv1','x3','x2','sci2','sci1','epee2','epee1'];
+const K=['or','pierre','bois','pv','sci','army'];
+const DEF={wOr:1.0,wPi:0.6,wBo:0.35,conv:0.5,tau:3,wRr:0.35,wDie:0.6,wCopy:4,wX4:1.5,sigma:2,wLoot:0.4,lambda:0.5,pvBias:1,margin:0.05};
+function yieldOf(dice){
+  const ev=[],em=[]; for(const d of dice){ const e={or:0,pierre:0,bois:0,pv:0,sci:0,army:0}; let m=0;
+    for(const id of d){ const f=FT[id]; if(!f){ m+=1; continue; } if(f[0]==='mult') m+=f[1]; else { e[f[0]]+=f[1]; m+=1; } }
+    for(const k of K) e[k]/=6; ev.push(e); em.push(m/6); }
+  let prod=1; for(const m of em) prod*=m; const Y={or:0,pierre:0,bois:0,pv:0,sci:0,army:0};
+  ev.forEach((e,i)=>{ const o=prod/em[i]; for(const k of K) Y[k]+=e[k]*o; }); return Y;
+}
+function makeUltime(W, env){
+  W={...DEF,...W};
+  const resVal=r=>r.or*W.wOr+r.pierre*W.wPi+r.bois*W.wBo;
+  const yResVal=Y=>Y.or*W.wOr+Y.pierre*W.wPi+Y.bois*W.wBo;
+  // contexte d'une décision : tout ce qui ne dépend pas de mon choix
+  function context(p,g){
+    const opp=g.players.filter(q=>q!==p).map(q=>({q,Y:yieldOf(q.dice)}));
+    const round=env.round(g), target=env.target;
+    const Topp=Math.min(...opp.map(o=>{ const s=o.Y.pv*W.pvBias+W.conv*yResVal(o.Y)*0.5; return (target-o.q.pv)/Math.max(s,0.05); }));
+    // batailles à venir : [manche, valeur, j'ai encore mes lancers avant ?]
+    const B=[]; let k=env.battleNo(g); const be=env.battleEvery;
+    if(env.card(g)==='bataille' && round%be!==0){ B.push({r:round,val:env.battleVal(k)*(env.grande(g)?2:1),now:true}); k++; }
+    for(let r=Math.ceil(round/be)*be; r<=round+40; r+=be){ const first=B.length===0; B.push({r,val:env.battleVal(k)*(first&&env.grande(g)?2:1),now:r===round,pacte:first&&env.pacte(g)}); k++; }
+    return {opp,round,target,Topp,B};
+  }
+  function score(p,dice,res,ctx,extraArmy=0){
+    const Y=yieldOf(dice), round=ctx.round;
+    const s=Y.pv*W.pvBias+W.conv*yResVal(Y)*0.5;
+    const Tme=(ctx.target-p.pv)/Math.max(s,0.05);
+    const T=Math.max(1,Math.min(Tme,ctx.Topp,40));
+    let v=p.pv + W.conv*resVal(res) + T*Y.pv*W.pvBias + W.conv*yResVal(Y)*Math.max(0,T-W.tau);
+    // science : paliers encore à atteindre
+    const st=env.steps, ys=Math.max(Y.sci,1e-6);
+    const rr=p.sci>=st.rr2?2:p.sci>=st.rr1?1:0; v+=rr*W.wRr*T;
+    const add=(thr,perRound,once)=>{ if(p.sci>=thr) return; const t=(thr-p.sci)/ys; if(t<T) v+= perRound*(T-t)+once; };
+    add(st.rr1,W.wRr,0); add(st.rr2,W.wRr,0);
+    if(dice.length<3) add(st.die3,W.wDie,0); if(dice.length<4) add(st.die4,W.wDie,0);
+    add(st.copy,0,W.wCopy); add(st.x4,W.wX4,0);
+    // batailles : probabilité de gagner selon les armées projetées
+    let prevR=round, mine0=p.army+extraArmy, opp0=ctx.opp.map(o=>o.q.army);
+    for(const b of ctx.B){ if(b.r-round>T) break; const rolls=b.now?0:b.r-prevR;
+      const mine=mine0+Y.army*rolls, oppA=Math.max(...ctx.opp.map((o,i)=>opp0[i]+o.Y.army*rolls));
+      const P=1/(1+Math.exp(-(mine-oppA)/W.sigma)); v+=P*(b.val + (b.pacte?0:W.wLoot*4));
+      prevR=b.r; mine0=0; opp0=opp0.map(()=>0); }
+    return v;
+  }
+  function slots(p,dice){ const out=[]; dice.forEach((d,di)=>d.forEach((id,fi)=>{ if(id==='x4') return; out.push({di,fi,v:(FT[id]?(FT[id][0]==='mult'?FT[id][1]*3:FT[id][1]*({or:3,pierre:2,bois:1,pv:4,sci:2.5,army:2.5}[FT[id][0]])):0)}); }));
+    return out.sort((a,b)=>a.v-b.v).slice(0,8); }
+  function withFace(dice,di,fi,id){ const nd=dice.map(d=>d.slice()); nd[di][fi]=id; return nd; }
+  function bestPlace(p,id,ctx){ let best=null; for(const s of slots(p,p.dice)){ const v=score(p,withFace(p.dice,s.di,s.fi,id),p.res,ctx); if(!best||v>best.v) best={di:s.di,fi:s.fi,v}; } return best; }
+  const bot=(p,g)=>{
+    const ctx=context(p,g); const base=score(p,p.dice,p.res,ctx); let best=null;
+    for(const id of BUY){ const c=env.cost(p,id); if(!['or','pierre','bois'].every(r=>p.res[r]>=(c[r]||0))) continue;
+      const res={...p.res}; for(const r in c) res[r]-=c[r];
+      for(const s of slots(p,p.dice)){ const v=score(p,withFace(p.dice,s.di,s.fi,id),res,ctx); if(!best||v>best.v) best={id,di:s.di,fi:s.fi,v}; } }
+    return best && best.v>base+W.margin ? best : null;
+  };
+  bot.rank=(p,g,k)=>{ const ctx=context(p,g); const base=score(p,p.dice,p.res,ctx); const all=[];
+    for(const id of BUY){ const c=env.cost(p,id); if(!['or','pierre','bois'].every(r=>p.res[r]>=(c[r]||0))) continue;
+      const res={...p.res}; for(const r in c) res[r]-=c[r]; let b=null;
+      for(const s of slots(p,p.dice)){ const v=score(p,withFace(p.dice,s.di,s.fi,id),res,ctx); if(!b||v>b.v) b={id,di:s.di,fi:s.fi,v}; } if(b) all.push(b); }
+    all.sort((a,b)=>b.v-a.v); return {base,opts:all.slice(0,k)}; };
+  bot.place=(p,id,g)=>{ const b=bestPlace(p,id,context(p,g)); return b; };
+  bot.choose=(p,ids,g)=>{ const ctx=context(p,g); let best=null; for(const id of ids){ const b=bestPlace(p,id,ctx); if(b&&(!best||b.v>best.v)) best={...b,id}; } return best; };
+  bot.merc=(p,g)=>{ const ctx=context(p,g); const res={...p.res,or:p.res.or-2}; return score(p,p.dice,res,ctx,2)>score(p,p.dice,p.res,ctx); };
+  return bot;
+}
+module.exports={makeUltime,yieldOf,DEF,setFT:(id,a)=>{FT[id]=a;}};
+ })(m2); const U=m2.exports;
+  // faces « +3 » (et +4 PV)
+  [['bois2',3],['pierre2',3],['or2',3],['pv2',3],['pv3',4],['sci2',3],['epee2',3]].forEach(([id,n])=>M.setFaceN(id,n));
+  U.setFT('bois2',['bois',3]); U.setFT('pierre2',['pierre',3]); U.setFT('or2',['or',3]); U.setFT('pv2',['pv',3]); U.setFT('pv3',['pv',4]); U.setFT('sci2',['sci',3]); U.setFT('epee2',['army',3]);
+  const {first,afford,countT,CFG}=M.H;
+  const STY={"rushpv":{"invest":4,"sciTarget":4,"sciWhen":"after","army":"none","armyFaces":1,"armyType":"epee2","trib":0,"sciFaces":2,"tribType":"pierre","mult":0,"multPref":"x2","multWhen":"invest","eco":"equi","pv":"best","ecoAfter":1},"armee":{"invest":4,"sciTarget":0,"sciWhen":"invest","army":"steady","armyFaces":4,"armyType":"epee1","trib":0,"sciFaces":1,"tribType":"best","mult":0,"multPref":"x3","multWhen":"after","eco":"or","pv":"noPV1","ecoAfter":0},"science":{"invest":10,"sciTarget":14,"sciWhen":"first","army":"none","armyFaces":3,"armyType":"epee1","trib":0,"sciFaces":4,"tribType":"or","mult":3,"multPref":"x3","multWhen":"invest","eco":"equi","pv":"noPV1","ecoAfter":0}}, CON={"rushpv":{"invest":0,"sciTarget":10,"sciWhen":"invest","army":"steady","armyFaces":2,"armyType":"epee2","trib":0,"sciFaces":4,"tribType":"pierre","mult":0,"multPref":"x2","multWhen":"after","eco":"equi","pv":"noPV1","ecoAfter":0},"armee":{"invest":10,"sciTarget":14,"sciWhen":"first","army":"steady","armyFaces":6,"armyType":"epee2","trib":0,"sciFaces":3,"tribType":"best","mult":3,"multPref":"x3","multWhen":"invest","eco":"equi","pv":"noPV1","ecoAfter":0},"science":{"invest":4,"sciTarget":16,"sciWhen":"invest","army":"steady","armyFaces":5,"armyType":"epee1","trib":0,"sciFaces":6,"tribType":"pierre","mult":0,"multPref":"x3","multWhen":"invest","eco":"equi","pv":"noPV1","ecoAfter":0},"mixte":{"invest":4,"sciTarget":4,"sciWhen":"invest","army":"steady","armyFaces":4,"armyType":"epee2","trib":0,"sciFaces":6,"tribType":"best","mult":0,"multPref":"x2","multWhen":"after","eco":"equi","pv":"noPV1","ecoAfter":0}}, UW={"wOr":0.6965733325862379,"wPi":0.8725205939823105,"wBo":0.45501888578828775,"conv":0.4332585545387406,"tau":1.8044856430735638,"wRr":0.4676701029596371,"wDie":0.46372897925031026,"wCopy":3.932366901208462,"wX4":1.8171878443821767,"sigma":0.6196655414769695,"wLoot":1.3925701023224293,"lambda":0.4062102191017496,"pvBias":1.3559142527190893,"margin":0.030910342872525986};
+  const ECO_ORDERS={or:['or2','or1','pierre2','pierre1','bois3','bois2'], equi:['or2','pierre2','or1','bois3','pierre1','bois2'], bois:['bois3','pierre2','bois2','or2','pierre1','or1']};
+  function makeBot(G){ return (p,g)=>{
+    const r=g.round, inv=r<=G.invest, left=CFG.battleEvery-((r-1)%CFG.battleEvery);
+    const opps=g.players.filter(q=>q!==p);
+    const sciNow = G.sciWhen==='first' || (G.sciWhen==='invest'&&inv) || (G.sciWhen==='after'&&!inv);
+    if(p.sci<G.sciTarget && sciNow && countT(p,'sci')<(G.sciFaces||2)){ const x=first(p,['sci2','sci1']); if(x) return x; }
+    const nA=countT(p,'army'); const aIds=G.armyType==='epee2'?['epee2','epee1']:['epee1','epee2'];
+    if(G.army==='steady' && nA<G.armyFaces){ const x=first(p,aIds); if(x) return x; }
+    if(G.army==='burst' && left<=3 && nA<G.armyFaces){ const x=first(p,aIds); if(x) return x; }
+    if(G.army==='defend' && left<=2 && Math.max(...opps.map(q=>q.army))>=p.army && nA<G.armyFaces+2){ const x=first(p,aIds); if(x) return x; }
+    const multNow = G.multWhen==='invest' ? true : !inv;
+    if(G.mult>0 && multNow && countT(p,'mult')<Math.min(G.mult,p.dice.length-1)){ const x=first(p,G.multPref==='x3'?['x3','x2']:['x2','x3']); if(x) return x; }
+    if(inv) return first(p,ECO_ORDERS[G.eco]);
+    const pv = G.pv==='best'?first(p,['pv3','pv2','pv1']) : G.pv==='noPV1'?first(p,['pv3','pv2']) : first(p,['pv3']);
+    if(pv) return pv;
+    return G.ecoAfter? first(p,ECO_ORDERS[G.eco]) : null;
+  };}
+  const env={cost:(p,id)=>M.H.cost(p,id), round:g=>g.round, get target(){return CFG.target;}, get battleEvery(){return CFG.battleEvery;},
+    battleVal:k=>CFG.battlePV+k, battleNo:g=>g.battleNo||0, card:g=>g.ev, grande:g=>!!g.grande, pacte:g=>!!g.pacte,
+    steps:{rr1:2,rr2:10,die3:4,die4:14,copy:8,x4:16}};
+  M.GENOMES={};
+  const reg=(name,fn,genome)=>{ M.STRATS[name]=fn; if(genome) M.GENOMES[name]=genome; };
+  reg('rushpv',makeBot(STY.rushpv),STY.rushpv); reg('armee',makeBot(STY.armee),STY.armee); reg('science',makeBot(STY.science),STY.science);
+  reg('rollout',makeBot(CON.mixte),CON.mixte);
+  const MODES=Object.fromEntries(Object.entries(CON).map(([k,g])=>[k,makeBot(g)]));
+  function classify(q){ const s={armee:countT(q,'army'),science:countT(q,'sci'),rushpv:Math.max(0,countT(q,'pv')-q.dice.length)};
+    const t=Object.entries(s).sort((a,b)=>b[1]-a[1])[0]; return t[1]>0?t[0]:null; }
+  function adaptMode(p,g){ const opp=g.players.filter(q=>q!==p), need=opp.length>=3?2:1, c={};
+    opp.forEach(q=>{const t=classify(q); if(t)c[t]=(c[t]||0)+1;}); const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];
+    return top&&top[1]>=need?top[0]:'mixte'; }
+  reg('adapt',(p,g)=>MODES[adaptMode(p,g)](p,g),CON.mixte);
+  const h=U.makeUltime(UW,env);
+  let LEVEL={K:6,R:80};
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+  const mc=(p,g)=>{ const {opts}=h.rank(p,g,LEVEL.K); if(!opts.length) return null; let best=null;
+    for(const c of [null,...opts]){ let w=0;
+      for(let r=0;r<LEVEL.R;r++){ const cg=M.cloneGame(g); shuffle(cg.deck); cg.players.forEach(q=>q.s='adapt'); const me=cg.players[p.i];
+        if(c){ M.setEV(g.ev); const cost=M.H.cost(me,c.id); for(const k in cost) me.res[k]-=cost[k]; me.dice[c.di][c.fi]=c.id; }
+        const res=M.continueFrom(cg,p.i,!c); if(res.winners.includes(p.i)) w+=1/res.winners.length; }
+      if(!best||w>best.w) best={c,w}; }
+    return best.c; };
+  reg('ultime',mc,CON.mixte);
+  function configure(o){
+    M.setCfg({target:o.target,battleEvery:o.battleEvery,battlePV:o.battlePV,battleLinear:true,battleDouble:false,sci:[2,99,10,99,99],freeDice:[4,14],copyAt:8,x4At:16,events:true,cardAfterBattle:true,resetArmy:true});
+    M.setCosts({...o.costs,bois3:{or:999}}); M.setBase(['pv1','pierre1','pierre1','bois1','bois1','bois1']); if(o.level) LEVEL=o.level;
+  }
+  function toSim(PG){
+    return {round:PG.round, players:PG.players.map((q,i)=>({s:q.bot?q.bot.key:'rollout',param:0,i,dice:q.dice.map(d=>d.slice()),res:{...q.res},pv:q.pv,sci:q.sci,army:q.army,battlePV:0,loot:0})),
+      deck:PG.deck.slice(), snap:null, hist:[], ev:PG.card, L:[], grande:!!PG.grande, pacte:!!PG.pacte, battleNo:PG.battleNo||0};
+  }
+  function decide(PG,pi){ M.setEV(PG.card); const g=toSim(PG), p=g.players[pi]; const r=M.STRATS[p.s](p,g); M.setEV(PG.card);
+    if(!r) return null; if(typeof r==='object') return {id:r.id,di:r.di,fi:r.fi};
+    if(!afford(p,M.H.cost(p,r))) return null; const w=M.worst(p); if(!w||M.fval(r)<=w.v) return null; return {id:r,di:w.di,fi:w.fi}; }
+  function place(PG,pi,id){ M.setEV(PG.card); const g=toSim(PG), p=g.players[pi];
+    if(p.s==='ultime'){ const b=h.place(p,id,g); return b?{di:b.di,fi:b.fi}:null; }
+    const w=M.worst(p); if(!w) return null; if(id==='x4'||M.fval(id)>w.v) return {di:w.di,fi:w.fi}; return null; }
+  function choose(PG,pi,ids){ M.setEV(PG.card); const g=toSim(PG), p=g.players[pi];
+    if(p.s==='ultime'){ const b=h.choose(p,ids,g); return b?{id:b.id,di:b.di,fi:b.fi}:null; }
+    const G0=M.GENOMES[p.s]||{}; let id;
+    if(ids.length===3&&ids.includes('epee1')) id = G0.army&&G0.army!=='none'?'epee1': p.sci<14?'sci1':'or1';
+    else id=ids.slice().sort((a,b)=>M.fval(b)-M.fval(a))[0];
+    const w=M.worst(p); if(w&&M.fval(id)>w.v) return {id,di:w.di,fi:w.fi}; return null; }
+  function merc(PG,pi){ M.setEV(PG.card); const g=toSim(PG), p=g.players[pi];
+    if(p.s==='ultime') return h.merc(p,g); const G0=M.GENOMES[p.s]||{}; return !!(G0.army&&G0.army!=='none'); }
+  return {configure,decide,place,choose,merc,adaptMode:(PG,pi)=>{ const g=toSim(PG); return adaptMode(g.players[pi],g); }, fval:id=>M.fval(id)};
+})();
+
+
+/* ================= Données ================= */
+const RES=['or','pierre','bois'], RES_LABEL={or:'or',pierre:'pierre',bois:'bois'};
+const PLAYER_COLORS=['#c2410c','#1d4ed8','#15803d','#7e22ce','#b45309','#0f766e'];
+const FACES={
+  bois1:{type:'res',r:'bois',n:1}, bois2:{type:'res',r:'bois',n:3},
+  pierre1:{type:'res',r:'pierre',n:1}, pierre2:{type:'res',r:'pierre',n:3},
+  or1:{type:'res',r:'or',n:1}, or2:{type:'res',r:'or',n:3},
+  pv1:{type:'pv',n:1}, pv2:{type:'pv',n:3}, pv3:{type:'pv',n:4},
+  x2:{type:'mult',n:2}, x3:{type:'mult',n:3}, x4:{type:'mult',n:4},
+  sci1:{type:'sci',n:1}, sci2:{type:'sci',n:3}, epee1:{type:'army',n:1}, epee2:{type:'army',n:3},
+};
+const F=id=>FACES[id];
+const BASE_DIE=['pv1','pierre1','pierre1','bois1','bois1','bois1'];
+const SHOP=[
+  {g:'Ressources',items:['bois2','pierre1','pierre2','or1','or2']},
+  {g:'Points de victoire',items:['pv1','pv2','pv3']},
+  {g:'Science · Armée',items:['sci1','sci2','epee1','epee2']},
+  {g:'Multiplicateurs',items:['x2','x3']},
+];
+const DEFAULT_COSTS={
+  bois2:{bois:2}, pierre1:{bois:2}, pierre2:{bois:2,pierre:1}, or1:{pierre:2}, or2:{pierre:2,or:1},
+  pv1:{bois:1,pierre:1}, pv2:{pierre:2,or:2}, pv3:{pierre:3,or:3}, x2:{pierre:2,or:1}, x3:{pierre:2,or:2},
+  sci1:{bois:2,pierre:1}, sci2:{bois:2,pierre:2,or:1}, epee1:{bois:2,pierre:2}, epee2:{bois:2,pierre:2,or:1},
+};
+let COSTS=JSON.parse(JSON.stringify(DEFAULT_COSTS));
+try{ const s=localStorage.getItem('atelier-costs-v8'); if(s) COSTS=Object.assign(COSTS,JSON.parse(s)); }catch(e){}
+const SCI_STEPS=[
+  {at:2,txt:'1 relance par tour'},{at:4,txt:'3e dé offert',die:true},{at:8,txt:'copie d’une face adverse',copy:true},
+  {at:10,txt:'2 relances par tour'},{at:14,txt:'4e dé offert',die:true},{at:16,txt:'une face ×4 unique',x4:true},
+];
+const rerollsOf=p=>p.sci>=10?2:p.sci>=2?1:0;
+const DEFAULT_CONFIG={battleEvery:5,battlePV:2,level:80};
+let CONFIG={...DEFAULT_CONFIG};
+try{ const s=localStorage.getItem('atelier-config-v7'); if(s) CONFIG=Object.assign(CONFIG,JSON.parse(s)); }catch(e){}
+const saveConfig=()=>{try{localStorage.setItem('atelier-config-v7',JSON.stringify(CONFIG));}catch(e){}};
+const saveCosts=()=>{try{localStorage.setItem('atelier-costs-v8',JSON.stringify(COSTS));}catch(e){}};
+
+const CARDS=[
+ ['renfort','Renfort','rattrapage','Le joueur qui a le moins de PV gagne une face gratuite au choix : +1 science, +1 armée ou +1 or.'],
+ ['atelier','Atelier secret','rattrapage','Le joueur qui a le moins de PV gagne une face ×2 gratuite.'],
+ ['pipes','Dés pipés','rattrapage','Le joueur qui a le moins de PV choisit le résultat d’un de ses dés pour cette manche.'],
+ ['espion','Espion','rattrapage','Le joueur qui a le moins de PV copie une face d’un adversaire.'],
+ ['heros','Héros du peuple','rattrapage','Le joueur qui a le moins de PV gagne 3 PV.'],
+ ['mecene','Mécène','rattrapage','Le joueur qui a le moins de PV gagne 1 or, 1 bois et 1 pierre.'],
+ ['eureka','Eurêka','rattrapage','Le joueur qui a le moins de PV gagne +2 science.'],
+ ['seconde','Seconde chance','rattrapage','Le joueur qui a le moins de PV a 2 relances de plus cette manche.'],
+ ['emprunt','Emprunt','rattrapage','Le joueur qui a le moins de PV lance un dé d’un adversaire et récolte le résultat.'],
+ ['destin','Destin partagé','rattrapage','Le joueur qui a le plus de PV lance un de ses dés ; tous les autres récoltent ce résultat.'],
+ ['recensement','Recensement','rattrapage','Le ou les joueurs qui ont le moins de dés gagnent +2 science.'],
+ ['bataille','Bataille immédiate','armée','Une bataille a lieu à la fin de cette manche, en plus des batailles prévues.'],
+ ['mobilisation','Mobilisation','armée','L’armée gagnée cette manche compte double.'],
+ ['pacte','Pacte de non-agression','armée','Pas de pillage à la prochaine bataille (les PV restent).'],
+ ['grande','Grande bataille','armée','La prochaine bataille rapporte le double de PV.'],
+ ['desertion','Désertion','armée','Le joueur qui a la plus grosse armée en perd la moitié.'],
+ ['mercenaires','Mercenaires','armée','Cette manche, on peut payer 2 or pour +2 armée (une fois).'],
+ ['guerilla','Guérilla','armée','Le joueur qui a la plus petite armée vole 2 ressources au joueur qui a la plus grosse.'],
+ ['ruee','Ruée vers l’or… ratée','économie','Tout l’or en réserve disparaît.'],
+ ['incendie','Incendie','économie','Tout le bois en réserve disparaît.'],
+ ['effondrement','Effondrement','économie','Toute la pierre en réserve disparaît.'],
+ ['soldes','Soldes','économie','Toutes les faces coûtent 1 ressource de moins cette manche.'],
+ ['inflation','Inflation','économie','Toutes les faces coûtent 1 ressource de plus cette manche.'],
+ ['marche','Marché ouvert','économie','Cette manche, on peut échanger 2 ressources identiques contre 1 au choix.'],
+ ['penurie','Pénurie','économie','Personne ne peut acheter cette manche.'],
+ ['filon_or','Filon d’or','économie','Les faces or rapportent double cette manche.'],
+ ['filon_pierre','Filon de pierre','économie','Les faces pierre rapportent double cette manche.'],
+ ['surplus_bois','Surplus de bois','économie','Les faces bois rapportent double cette manche.'],
+ ['greve','Grève des bûcherons','économie','Les faces bois ne rapportent rien cette manche.'],
+ ['forge','Forge','économie','Les faces armée coûtent 1 pierre de moins cette manche.'],
+ ['academie','Académie','économie','Les faces science coûtent 1 bois de moins cette manche.'],
+ ['age','Âge d’or','dés','Tous les résultats sont doublés cette manche, sauf les PV.'],
+ ['panne','Panne de machines','dés','Les ×2, ×3 et ×4 ne comptent pas cette manche.'],
+ ['relance','Relance générale','dés','Tout le monde a 1 relance de plus cette manche.'],
+ ['petites','Petites mains','dés','Les faces +1 (bois, pierre, or, science, armée) rapportent 2 au lieu de 1. Pas les PV.'],
+ ['tempete','Tempête','dés','Chaque joueur ne lance que 2 de ses dés cette manche, au choix.'],
+ ['festival','Festival des doubles','dés','Chaque joueur qui obtient deux faces identiques gagne 2 ressources au choix.'],
+ ['prophetie','Prophétie','dés','Avant de lancer, chacun annonce la ressource qu’il pense obtenir le plus. S’il a raison : +2 de cette ressource.'],
+ ['revanche','Revanche des petits','dés','Chacun lance un de ses dés (en plus). Le ou les plus petits chiffres récoltent leur face (un ×2 vaut 2 mais ne rapporte rien).'],
+ ['repos','Jour de repos','calme','Rien ne se passe.'],
+ ['beau','Beau temps','calme','+1 bois pour tout le monde.'],
+ ['carriere','Carrière','calme','+1 pierre pour tout le monde.'],
+ ['pepite','Pépite','calme','+1 or pour tout le monde.'],
+ ['decouverte','Découverte','calme','+1 science pour tout le monde.'],
+ ['recrutement','Recrutement','calme','+1 armée pour tout le monde.'],
+].map(([id,n,c,t])=>({id,n,c,t}));
+const CARD=Object.fromEntries(CARDS.map(c=>[c.id,c]));
+const CAT_ICON={rattrapage:'🤝',armée:'⚔️',économie:'💰',dés:'🎲',calme:'☀️'};
+
+const BOTS={
+  rushpv:{key:'rushpv',name:'Rush PV',desc:'investit très peu et achète des faces PV au plus vite'},
+  armee:{key:'armee',name:'Rush armée',desc:'des épées dès le début pour gagner les batailles et piller'},
+  science:{key:'science',name:'Rush science',desc:'longue phase d’éco, science très haute, puis PV'},
+  adapt:{key:'adapt',name:'Adaptatif',desc:'lit les dés adverses et joue la contre-stratégie'},
+  ultime:{key:'ultime',name:'Ultime',desc:'simule des dizaines de futurs avant chaque achat'},
+};
+
+/* ================= Icônes et faces ================= */
+function icon(k,s){
+  const z=s?` width="${s}" height="${s}"`:'';
+  if(k==='or') return `<svg${z} viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e8b42a" stroke="#9c7210" stroke-width="2"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#9c7210" stroke-width="1.6"/></svg>`;
+  if(k==='pierre') return `<svg${z} viewBox="0 0 24 24"><path d="M5 9l5-6h6l4 6-2 10H7z" fill="#a3a8b0" stroke="#5b616b" stroke-width="2" stroke-linejoin="round"/><path d="M10 3l1 6h7M11 9l-4 10" fill="none" stroke="#5b616b" stroke-width="1.3"/></svg>`;
+  if(k==='bois') return `<svg${z} viewBox="0 0 24 24"><rect x="2" y="7" width="17" height="10" rx="2" fill="#b07440" stroke="#6b3f1c" stroke-width="2"/><ellipse cx="19" cy="12" rx="3" ry="5" fill="#e2b989" stroke="#6b3f1c" stroke-width="2"/><circle cx="19" cy="12" r="1.3" fill="#6b3f1c"/></svg>`;
+  if(k==='pv') return `<svg${z} viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" fill="#8b5cf6" stroke="#5b21b6" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+  if(k==='sci') return `<svg${z} viewBox="0 0 24 24"><path d="M9 2h6M10 2v6L4.5 18.5A2.3 2.3 0 006.5 22h11a2.3 2.3 0 002-3.5L14 8V2" fill="#cdeff3" stroke="#0e7490" stroke-width="2" stroke-linejoin="round"/><path d="M7 15h10" stroke="#0e7490" stroke-width="2"/></svg>`;
+  if(k==='army') return `<svg${z} viewBox="0 0 24 24"><path d="M19 3l-9.5 9.5M19 3h2v2l-9.5 9.5" fill="none" stroke="#b91c1c" stroke-width="2.2" stroke-linecap="round"/><path d="M6 13l5 5M8 15l-4.5 4.5M3 21l1.5-1.5" stroke="#7f1d1d" stroke-width="2.4" stroke-linecap="round"/><path d="M18 4L9.5 12.5l2 2L20 6V4z" fill="#fca5a5"/></svg>`;
+  return '';
+}
+function faceHTML(id,cls='',attrs=''){
+  if(!id) return `<div class="face blank ${cls}" ${attrs}>?</div>`;
+  const f=F(id);
+  if(f.type==='res') return `<div class="face r-${f.r} ${cls}" ${attrs}><span class="n">+${f.n}</span>${icon(f.r)}</div>`;
+  if(f.type==='mult') return `<div class="face t-mult ${cls}" ${attrs}><span class="n">×${f.n}</span></div>`;
+  const ic={pv:'pv',sci:'sci',army:'army'}[f.type];
+  return `<div class="face t-${f.type} ${cls}" ${attrs}><span class="n">+${f.n}</span>${icon(ic)}</div>`;
+}
+function faceName(id){ const f=F(id);
+  if(f.type==='res') return `+${f.n} ${RES_LABEL[f.r]}`; if(f.type==='pv') return `+${f.n} PV`;
+  if(f.type==='sci') return `+${f.n} science`; if(f.type==='army') return `+${f.n} armée`; return `×${f.n}`; }
+const costText=c=>RES.filter(r=>c[r]>0).map(r=>`${c[r]} ${RES_LABEL[r]}`).join(' + ')||'gratuit';
+function costHTML(c,base){ const parts=RES.filter(r=>c[r]>0||(base&&base[r]>0)).map(r=>{ const d=base?(c[r]||0)-(base[r]||0):0;
+  return `<span class="${d<0?'cut':d>0?'up':''}">${c[r]||0}${icon(r)}</span>`; }); return parts.join('')||'<span>0</span>'; }
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ================= État ================= */
+let nPlayers=4, names=['Toi','Ultime','Adaptatif','Rush science','Joueur 5','Joueur 6'], types=['human','ultime','adapt','science','human','human'];
+let G=null;
+const P=()=>G.players[G.cur];
+const inL=p=>G.L.includes(p.i);
+function newPlayer(name,i,type){
+  return {i,name,color:PLAYER_COLORS[i],bot:type==='human'?null:BOTS[type],dice:[BASE_DIE.slice(),BASE_DIE.slice()],
+    res:{or:0,pierre:0,bois:0},hist:[],pv:0,sci:0,army:0,copy:0,gifts:[],rolled:null,rerollsLeft:0,useDice:null,prophecy:null,pipe:0,merc:false,mode:null};
+}
+
+/* ================= Mise en place ================= */
+function renderSetup(){
+  document.getElementById('countRow').innerHTML=[2,3,4,5,6].map(n=>`<button class="${n===nPlayers?'on':''}" onclick="nPlayers=${n};renderSetup()">${n}</button>`).join('');
+  document.getElementById('names').innerHTML=Array.from({length:nPlayers},(_,i)=>
+    `<label><span class="dot" style="background:${PLAYER_COLORS[i]}"></span><input type="text" value="${esc(names[i])}" oninput="names[${i}]=this.value">
+      <select onchange="types[${i}]=this.value;if(this.value!=='human'){names[${i}]=BOTS[this.value].name;renderSetup();}">
+        <option value="human" ${types[i]==='human'?'selected':''}>Humain</option>
+        ${Object.values(BOTS).map(b=>`<option value="${b.key}" ${types[i]===b.key?'selected':''}>🤖 ${b.name}</option>`).join('')}
+      </select></label>`).join('');
+}
+function quick(kind){
+  nPlayers=4;
+  if(kind==='ultime'){ types=['human','ultime','adapt','science']; names=[myName(),'Ultime','Adaptatif','Rush science',names[4],names[5]]; }
+  else { types=['human','ultime','ultime','ultime']; names=[myName(),'Ultime 1','Ultime 2','Ultime 3',names[4],names[5]]; }
+  document.getElementById('targetInput').value=40; startGame();
+}
+function startGame(){
+  const target=Math.max(1,parseInt(document.getElementById('targetInput').value)||40);
+  G={players:Array.from({length:nPlayers},(_,i)=>newPlayer(names[i].trim()||`Joueur ${i+1}`,i,types[i])),
+     cur:0,round:1,phase:'event',pending:null,pendingFree:null,log:[],target,lastTurnTriggered:false,lastGain:null,
+     battleNo:0,deck:shuffle(CARDS.map(c=>c.id)),card:null,rec:{id:newGameId(),start:new Date().toISOString(),cards:[],battles:[]},cardResult:[],grande:false,pacte:false,L:[]};
+  addLog(`Partie lancée à ${nPlayers} joueurs — objectif ${target} PV.`);
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('game').classList.remove('hidden');
+  startRound();
+}
+function backToSetup(){
+  if(G && G.phase!=='over'){ confirmBox('Abandonner la partie en cours ?',()=>{G=null;showSetup();}); return; }
+  G=null; showSetup();
+}
+function showSetup(){ closeModal(); document.getElementById('game').classList.add('hidden'); document.getElementById('setup').classList.remove('hidden'); renderSetup(); }
+function addLog(h){ if(G) G.log.unshift(h); }
+function note(h){ addLog(h); if(G&&G.card) (G.cardResult=G.cardResult||[]).push(h); if(G) render(); }
+const isCardRound=r=>r>1 && (r-1)%CONFIG.battleEvery===0;
+
+/* ================= Fenêtres et questions ================= */
+let askResolve=null;
+function openModal(html){ document.getElementById('modalBody').innerHTML=html; document.getElementById('modal').classList.remove('hidden'); }
+function closeModal(){ document.getElementById('modal').classList.add('hidden'); }
+function ask(html){ return new Promise(res=>{ askResolve=v=>{ askResolve=null; closeModal(); res(v); }; openModal(html); }); }
+function answer(v){ if(askResolve) askResolve(v); }
+function confirmBox(msg,ok){ window.__ok=ok; openModal(`<h2>${msg}</h2><div class="close-row"><button class="btn ghost" onclick="closeModal()">Non</button><button class="btn" onclick="closeModal();window.__ok()">Oui</button></div>`); }
+const who=q=>`<b style="color:${q.color}">${esc(q.name)}</b>`;
+async function askFace(q,ids,title){
+  return ask(`<h2>${title}</h2><p>${who(q)}, choisis :</p><div class="choices">${ids.map(id=>`<button onclick="answer('${id}')">${faceHTML(id)}<span>${faceName(id)}</span></button>`).join('')}</div>`);
+}
+async function askRes(q,title,text){
+  return ask(`<h2>${title}</h2><p>${who(q)}, ${text}</p><div class="choices">${RES.map(r=>`<button onclick="answer('${r}')">${icon(r,28)}<span>${RES_LABEL[r]}</span></button>`).join('')}</div>`);
+}
+async function askDie(q,owners,title,text){
+  // owners : liste de joueurs dont on peut choisir un dé ; renvoie {o,di}
+  window.__dice=[]; const blocks=owners.map(o=>`<div class="dice-title" style="margin:10px 0 6px;font-weight:700">${who(o)}</div><div class="dice">${o.dice.map((d,di)=>{ window.__dice.push({o:o.i,di}); const k=window.__dice.length-1;
+    return `<div class="die pickdie" onclick="answer(${k})"><div class="label">Dé ${di+1}</div><div class="net">${d.map(id=>faceHTML(id)).join('')}</div></div>`; }).join('')}</div>`).join('');
+  const k=await ask(`<h2>${title}</h2><p>${who(q)}, ${text}</p>${blocks}`); const x=window.__dice[k]; return {o:G.players[x.o],di:x.di};
+}
+async function askTwoDice(q){
+  window.__sel=[];
+  const draw=()=>`<h2>🌪️ Tempête</h2><p>${who(q)}, choisis les 2 dés à lancer cette manche.</p><div class="dice">${q.dice.map((d,di)=>`<div class="die pickdie" style="${window.__sel.includes(di)?'background:#f1e7d6;border-style:solid':''}" onclick="toggleSel(${di})"><div class="label">Dé ${di+1}${window.__sel.includes(di)?' ✓':''}</div><div class="net">${d.map(id=>faceHTML(id)).join('')}</div></div>`).join('')}</div>
+    <div class="close-row"><button class="btn" ${window.__sel.length===2?'':'disabled'} onclick="answer(window.__sel.slice())">Valider</button></div>`;
+  window.toggleSel=di=>{ const s=window.__sel; const k=s.indexOf(di); if(k>=0) s.splice(k,1); else if(s.length<2) s.push(di); document.getElementById('modalBody').innerHTML=draw(); };
+  return ask(draw());
+}
+
+/* ================= Science, gains ================= */
+function sciGain(p,n){
+  if(!n) return; const before=p.sci; p.sci+=n;
+  SCI_STEPS.forEach(st=>{ if(before<st.at && p.sci>=st.at){
+    addLog(`🔬 ${who(p)} atteint ${st.at} science : ${st.txt} !`);
+    if(st.die){ p.dice.push(BASE_DIE.slice()); }
+    if(st.copy) p.copy++;
+    if(st.x4) p.gifts.push('x4');
+  }});
+}
+function gainFace(p,id){ const f=F(id);
+  if(f.type==='res') p.res[f.r]+=f.n; else if(f.type==='pv') p.pv+=f.n; else if(f.type==='sci') sciGain(p,f.n); else if(f.type==='army') p.army+=f.n; }
+const avgVal=d=>d.reduce((s,id)=>s+ENGINE.fval(id),0)/6;
+function syncEngine(){ ENGINE.configure({target:G.target,battleEvery:CONFIG.battleEvery,battlePV:CONFIG.battlePV,costs:COSTS,level:{K:6,R:CONFIG.level}}); }
+
+/* ================= Début de manche : carte événement ================= */
+async function startRound(){
+  G.players.forEach(q=>{ q.useDice=null; q.prophecy=null; q.pipe=0; q.merc=false; });
+  G.card=null; G.cardResult=[]; G.extraBattle=false;
+  const ps=G.players, minPV=Math.min(...ps.map(q=>q.pv)), L=ps.filter(q=>q.pv===minPV); G.L=L.map(q=>q.i);
+  const maxPV=Math.max(...ps.map(q=>q.pv)), H=ps.find(q=>q.pv===maxPV);
+  G.phase='event'; G.cur=0; syncEngine();
+  if(isCardRound(G.round)){
+    if(!G.deck.length){ G.deck=shuffle(CARDS.map(c=>c.id)); addLog('🃏 Le paquet de cartes est remélangé.'); }
+    G.card=G.deck.pop(); G.extraBattle=G.card==='bataille'; G.rec.cards.push([G.round,G.card]);
+    const C=CARD[G.card]; addLog(`🃏 Manche ${G.round} — <b>${C.n}</b> : ${C.t}`);
+    render(); await revealCard(C);
+  const Lnames=L.map(q=>who(q)).join(', ');
+    switch(G.card){
+      case 'renfort': for(const q of L){ if(q.bot){ const c=ENGINE.choose(G,q.i,['sci1','epee1','or1']); if(c){ q.dice[c.di][c.fi]=c.id; note(`🤝 ${who(q)} prend une face ${faceName(c.id)}.`); } }
+        else { const id=await askFace(q,['sci1','epee1','or1'],'🤝 Renfort'); q.gifts.push(id); note(`🤝 ${who(q)} choisit une face ${faceName(id)} (à placer).`); } } break;
+      case 'atelier': for(const q of L){ if(q.bot){ const s=ENGINE.place(G,q.i,'x2'); if(s){ q.dice[s.di][s.fi]='x2'; note(`🤝 ${who(q)} pose une face ×2.`); } } else { q.gifts.push('x2'); note(`🤝 ${who(q)} reçoit une face ×2 (à placer).`); } } break;
+      case 'espion': for(const q of L){ if(q.bot) botCopy(q); else { q.copy++; note(`🤝 ${who(q)} peut copier une face adverse.`); } } break;
+      case 'heros': L.forEach(q=>q.pv+=3); note(`🤝 ${Lnames} gagne 3 PV.`); break;
+      case 'mecene': L.forEach(q=>RES.forEach(r=>q.res[r]++)); note(`🤝 ${Lnames} gagne 1 or, 1 bois et 1 pierre.`); break;
+      case 'eureka': L.forEach(q=>sciGain(q,2)); note(`🤝 ${Lnames} gagne 2 science.`); break;
+      case 'emprunt': for(const q of L){ let o,di;
+          if(q.bot){ let b=null; ps.forEach(x=>{ if(x!==q) x.dice.forEach((d,i)=>{ if(!b||avgVal(d)>b.v) b={o:x,di:i,v:avgVal(d)}; }); }); o=b.o; di=b.di; }
+          else ({o,di}=await askDie(q,ps.filter(x=>x!==q),'🤝 Emprunt','choisis le dé adverse à lancer.'));
+          const id=o.dice[di][Math.floor(Math.random()*6)]; gainFace(q,id); note(`🤝 ${who(q)} lance le dé ${di+1} de ${who(o)} : ${faceName(id)}${F(id).type==='mult'?' (rien)':''}.`); } break;
+      case 'destin': { let di;
+          if(H.bot){ di=H.dice.map((d,i)=>[avgVal(d),i]).sort((a,b)=>a[0]-b[0])[0][1]; }
+          else ({di}=await askDie(H,[H],'🎁 Destin partagé','choisis le dé que tu lances : tous les autres récolteront son résultat.'));
+          const id=H.dice[di][Math.floor(Math.random()*6)]; ps.forEach(q=>{ if(q!==H) gainFace(q,id); });
+          note(`🎁 ${who(H)} lance son dé ${di+1} : ${faceName(id)} pour tous les autres${F(id).type==='mult'?' (rien)':''}.`); } break;
+      case 'recensement': { const m=Math.min(...ps.map(q=>q.dice.length)); ps.filter(q=>q.dice.length===m).forEach(q=>{ sciGain(q,2); note(`🤝 ${who(q)} gagne 2 science.`); }); } break;
+      case 'ruee': ps.forEach(q=>q.res.or=0); break;
+      case 'incendie': ps.forEach(q=>q.res.bois=0); break;
+      case 'effondrement': ps.forEach(q=>q.res.pierre=0); break;
+      case 'desertion': { const m=Math.max(...ps.map(q=>q.army)); if(m>0) ps.filter(q=>q.army===m).forEach(q=>{ q.army=Math.floor(q.army/2); note(`⚔️ ${who(q)} perd la moitié de son armée.`); }); } break;
+      case 'guerilla': { const mx=ps.slice().sort((a,b)=>b.army-a.army)[0], mn=ps.slice().sort((a,b)=>a.army-b.army)[0];
+          if(mx.army>mn.army){ let k=2; const got=[]; for(const r of ['or','pierre','bois']) while(k>0&&mx.res[r]>0){ mx.res[r]--; mn.res[r]++; k--; got.push(RES_LABEL[r]); }
+            note(`⚔️ ${who(mn)} vole ${got.join(' + ')||'rien'} à ${who(mx)}.`); } } break;
+      case 'revanche': { const rolls=[];
+          for(const q of ps){ let di;
+            if(q.bot) di=q.dice.map((d,i)=>[d.filter(x=>F(x).n===1).length,i]).sort((a,b)=>b[0]-a[0])[0][1];
+            else ({di}=await askDie(q,[q],'🎲 Revanche des petits','choisis le dé à lancer (le plus petit chiffre gagne).'));
+            rolls.push(q.dice[di][Math.floor(Math.random()*6)]); }
+          const m=Math.min(...rolls.map(id=>F(id).n));
+          note('🎲 Revanche des petits : '+ps.map((q,i)=>`${who(q)} ${faceName(rolls[i])}`).join(' · '));
+          ps.forEach((q,i)=>{ if(F(rolls[i]).n===m){ gainFace(q,rolls[i]); note(`🎲 ${who(q)} récolte ${faceName(rolls[i])}${F(rolls[i]).type==='mult'?' (rien)':''}.`); } }); } break;
+      case 'pacte': G.pacte=true; break;
+      case 'grande': G.grande=true; break;
+      case 'beau': ps.forEach(q=>q.res.bois++); break;
+      case 'carriere': ps.forEach(q=>q.res.pierre++); break;
+      case 'pepite': ps.forEach(q=>q.res.or++); break;
+      case 'decouverte': ps.forEach(q=>sciGain(q,1)); break;
+      case 'recrutement': ps.forEach(q=>q.army++); break;
+    }
+  
+    await revealDone();
+  }
+  G.phase='roll'; render(); maybeBot();
+}
+/* Animation : la pile se soulève, la carte du dessus se retourne */
+const humans=()=>G.players.some(q=>!q.bot);
+let revealEl=null;
+async function revealCard(C){
+  if(!humans()) return;
+  revealEl=document.createElement('div'); revealEl.className='reveal';
+  revealEl.innerHTML=`<div class="stage"><div class="cardback"></div><div class="cardback"></div>
+      <div class="flip"><div class="inner"><div class="face-b cardback"></div>
+        <div class="face-f"><span class="cat">${CAT_ICON[C.c]} ${C.c}</span><div class="big">${CAT_ICON[C.c]}</div><h3>${C.n}</h3><p>${C.t}</p><span class="cat">Active pendant cette manche</span></div></div></div></div>
+    <div class="after"><div class="results" id="revealRes"></div><div style="margin-top:14px"><button class="btn" style="background:#fbf6ee;color:#2b2118" onclick="closeReveal()">Continuer</button></div></div>`;
+  document.body.appendChild(revealEl);
+  await sleep(350); revealEl.classList.add('lift'); await sleep(450); revealEl.classList.add('open'); await sleep(1000);
+}
+let revealResolve=null;
+function closeReveal(){ if(revealEl){ revealEl.remove(); revealEl=null; } if(revealResolve){ const r=revealResolve; revealResolve=null; r(); } }
+async function revealDone(){
+  if(!revealEl) return;
+  const box=revealEl.querySelector('#revealRes'); if(box) box.innerHTML=(G.cardResult||[]).map(l=>`<div>${l}</div>`).join('');
+  revealEl.classList.add('done');
+  await new Promise(r=>{ revealResolve=r; });
+}
+/* Fin de la manche de la carte : elle repasse sous le paquet */
+async function tuckCard(){
+  if(!G.card) return;
+  const mc=document.getElementById('miniCard');
+  if(mc && humans()){ mc.classList.add('tuck'); await sleep(1100); }
+  addLog(`🃏 La carte <b>${CARD[G.card].n}</b> retourne sous le paquet.`);
+  G.card=null; G.cardResult=[];
+}
+
+/* ================= Tour : lancer et récolte ================= */
+const used=p=>p.useDice||p.dice.map((_,i)=>i);
+function mainAction(){ if(G.phase==='roll') roll(); else if(G.phase==='rolled') collect(); }
+async function roll(){
+  if(G.phase!=='roll') return; const p=P();
+  if(!p.bot){
+    if(G.card==='tempete' && p.dice.length>2){ G.phase='prep'; p.useDice=await askTwoDice(p); }
+    if(G.card==='prophetie'){ G.phase='prep'; p.prophecy=await askRes(p,'🔮 Prophétie','quelle ressource penses-tu obtenir le plus ?'); note(`🔮 ${who(p)} prédit : ${RES_LABEL[p.prophecy]}.`); }
+  }
+  G.phase='rolling'; let t=0;
+  const tick=setInterval(()=>{ p.rolled=p.dice.map(()=>Math.floor(Math.random()*6)); renderDice(true); if(++t>=8){ clearInterval(tick); afterRoll(); } },70);
+  render();
+}
+function afterRoll(){
+  const p=P(); p.rolled=p.dice.map(()=>Math.floor(Math.random()*6));
+  p.rerollsLeft=rerollsOf(p)+(G.card==='seconde'&&inL(p)?2:0)+(G.card==='relance'?1:0);
+  p.pipe=G.card==='pipes'&&inL(p)?1:0;
+  if(p.rerollsLeft>0||p.pipe){ G.phase='rolled'; render(); } else collect();
+}
+function rerollDie(di){
+  const p=P(); if(G.phase!=='rolled'||p.rerollsLeft<=0||!used(p).includes(di)) return;
+  p.rerollsLeft--; G.phase='rerolling'; let t=0;
+  const tick=setInterval(()=>{ p.rolled[di]=Math.floor(Math.random()*6); renderDice(true,di);
+    if(++t>=6){ clearInterval(tick); p.rolled[di]=Math.floor(Math.random()*6); addLog(`${who(p)} relance son dé ${di+1} → ${faceName(p.dice[di][p.rolled[di]])}.`); G.phase='rolled'; render(); } },70);
+  render();
+}
+function pipeFace(di,fi){ const p=P(); if(G.phase!=='rolled'||!p.pipe||!used(p).includes(di)) return;
+  p.rolled[di]=fi; p.pipe=0; note(`🎲 ${who(p)} pipe son dé ${di+1} sur ${faceName(p.dice[di][fi])}.`); render(); }
+async function collect(){
+  const p=P(); G.phase='collecting';
+  let mult=1; const b={or:0,pierre:0,bois:0,pv:0,sci:0,army:0}; const seen={}; let dbl=false;
+  for(const di of used(p)){ const id=p.dice[di][p.rolled[di]], f=F(id); if(seen[id]) dbl=true; seen[id]=1;
+    if(f.type==='mult'){ if(G.card!=='panne') mult*=f.n; continue; }
+    let n=f.n; if(G.card==='petites' && n===1 && f.type!=='pv') n=2;
+    if(f.type==='res'){ if((G.card==='filon_or'&&f.r==='or')||(G.card==='filon_pierre'&&f.r==='pierre')||(G.card==='surplus_bois'&&f.r==='bois')) n*=2; if(G.card==='greve'&&f.r==='bois') n=0; b[f.r]+=n; }
+    else b[f.type]+=n; }
+  const k=G.card==='age'?2:1, gain={};
+  RES.forEach(r=>{ gain[r]=b[r]*mult*k; p.res[r]+=gain[r]; }); gain.pv=b.pv*mult; gain.sci=b.sci*mult*k; gain.army=b.army*mult*k*(G.card==='mobilisation'?2:1);
+  p.pv+=gain.pv; p.army+=gain.army;
+  G.lastGain={base:b,mult,gain};
+  addLog(`${who(p)} obtient ${gainText(gain)}${mult>1?` (×${mult})`:''}.`);
+  sciGain(p,gain.sci);
+  if(G.card==='festival' && dbl){
+    if(p.bot){ p.res.or+=2; note(`🎉 ${who(p)} fait un double : +2 or.`); }
+    else { for(let i=0;i<2;i++){ const r=await askRes(p,'🎉 Festival des doubles',`tu as fait un double ! Choisis la ressource n°${i+1}.`); p.res[r]++; } note(`🎉 ${who(p)} fait un double : +2 ressources.`); }
+  }
+  if(G.card==='prophetie' && p.prophecy){ const mx=Math.max(...RES.map(r=>gain[r])); if(!(mx>0 && gain[p.prophecy]===mx)) note(`🔮 ${who(p)} s’est trompé.`); if(mx>0 && gain[p.prophecy]===mx){ p.res[p.prophecy]+=2; note(`🔮 ${who(p)} avait raison : +2 ${RES_LABEL[p.prophecy]}.`); } }
+  G.phase='buy'; render(true);
+}
+function gainText(g){ const parts=[]; RES.forEach(r=>{ if(g[r]) parts.push(`+${g[r]} ${RES_LABEL[r]}`); });
+  if(g.pv) parts.push(`+${g.pv} PV`); if(g.sci) parts.push(`+${g.sci} science`); if(g.army) parts.push(`+${g.army} armée`); return parts.join(', ')||'rien'; }
+
+/* ================= Boutique ================= */
+function costOf(p,id){
+  const c={...COSTS[id]}; const card=G&&G.card;
+  if(card==='soldes'||card==='inflation'){ const ks=RES.filter(r=>c[r]>0).sort((a,b)=>c[b]-c[a]||({bois:1,pierre:2,or:3}[a]-{bois:1,pierre:2,or:3}[b])); if(ks.length) c[ks[0]]=Math.max(0,c[ks[0]]+(card==='soldes'?-1:1)); }
+  if(card==='forge'&&F(id).type==='army'&&c.pierre) c.pierre--;
+  if(card==='academie'&&F(id).type==='sci'&&c.bois) c.bois--;
+  return c;
+}
+const canAfford=(p,c)=>RES.every(r=>(p.res[r]||0)>=(c[r]||0));
+const pay=(p,c,s=1)=>RES.forEach(r=>p.res[r]-=s*(c[r]||0));
+const canBuy=id=>G.phase==='buy' && !P().bot && G.card!=='penurie' && canAfford(P(),costOf(P(),id));
+function buy(id){ if(!canBuy(id)) return; pay(P(),costOf(P(),id)); G.pending=id; G.pendingCost=costOf(P(),id); G.pendingFree=null; G.phase='place'; render(); }
+function placeFace(di,fi){
+  if(G.phase!=='place') return; const p=P(), old=p.dice[di][fi]; p.dice[di][fi]=G.pending; p.hist.push([G.round,G.pending,old,G.pendingFree||'achat']);
+  addLog(`${who(p)} remplace ${faceName(old)} par ${faceName(G.pending)} (dé ${di+1}).`);
+  G.pending=null; G.pendingFree=null; G.phase='buy'; render();
+}
+function cancelPlace(){
+  if(G.phase!=='place') return; const p=P();
+  if(G.pendingFree==='copy') p.copy++; else if(G.pendingFree==='gift') p.gifts.unshift(G.pending); else pay(p,G.pendingCost,-1);
+  G.pending=null; G.pendingFree=null; G.phase='buy'; render();
+}
+function placeGift(){ const p=P(); if(G.phase!=='buy'||!p.gifts.length) return; G.pending=p.gifts.shift(); G.pendingFree='gift'; G.phase='place'; render(); }
+function startCopy(){
+  const p=P(); if(G.phase!=='buy'||p.copy<=0) return;
+  openModal(`<h2>📋 Copier une face adverse</h2><p style="color:var(--muted);margin-top:0">Clique sur la face à copier, puis sur la face de ton dé qu’elle remplace.</p>
+    ${G.players.map((q,i)=>i===G.cur?'':`<div style="margin:10px 0 6px;font-weight:700">${who(q)}</div><div class="dice">${q.dice.map((d,di)=>`<div class="die"><div class="net pick">${d.map((id,fi)=>id==='x4'?faceHTML(id):faceHTML(id,'',`onclick="pickCopy(${i},${di},${fi})"`)).join('')}</div></div>`).join('')}</div>`).join('')}
+    <div class="close-row"><button class="btn ghost" onclick="closeModal()">Plus tard</button></div>`);
+}
+function pickCopy(i,di,fi){ const p=P(), id=G.players[i].dice[di][fi]; closeModal(); p.copy--; G.pending=id; G.pendingFree='copy'; G.phase='place'; addLog(`📋 ${who(p)} copie une face ${faceName(id)} de ${who(G.players[i])}.`); render(); }
+function hireMercs(){ const p=P(); if(G.phase!=='buy'||G.card!=='mercenaires'||p.merc||p.res.or<2) return; p.res.or-=2; p.army+=2; p.merc=true; note(`⚔️ ${who(p)} engage des mercenaires : +2 armée.`); render(); }
+function trade(){ const p=P(); const a=document.getElementById('trFrom').value, b=document.getElementById('trTo').value;
+  if(G.phase!=='buy'||G.card!=='marche'||p.res[a]<2) return; p.res[a]-=2; p.res[b]++; addLog(`💰 ${who(p)} échange 2 ${RES_LABEL[a]} contre 1 ${RES_LABEL[b]}.`); render(); }
+
+/* ================= Fin de tour, batailles ================= */
+const battleVal=k=>CONFIG.battlePV+k;
+function battleWhen(r){ const d=r-G.round+1; return d<=1?'Bataille à la fin de cette manche':`Prochaine bataille dans ${d} manches`; }
+function nextBattleInfo(){ const be=CONFIG.battleEvery; const r=G.extraBattle?G.round:Math.ceil(G.round/be)*be; return {r,val:battleVal(G.battleNo)*(G.grande?2:1)}; }
+function endTurn(){
+  if(G.phase!=='buy') return; const p=P();
+  if(!G.lastTurnTriggered && p.pv>=G.target){ G.lastTurnTriggered=true; addLog(`🏁 ${who(p)} atteint ${G.target} PV ! On termine la manche.`); }
+  p.rolled=null; G.lastGain=null;
+  G.cur=(G.cur+1)%G.players.length;
+  if(G.cur===0){ if(G.round%CONFIG.battleEvery===0 || G.extraBattle) battle(); else endRound(); return; }
+  G.phase='roll'; render(); maybeBot();
+}
+async function endRound(){
+  if(G.lastTurnTriggered || G.players.some(q=>q.pv>=G.target)){ G.phase='over'; render(); showWinner(); return; }
+  await tuckCard(); G.round++; startRound();
+}
+async function battle(){
+  G.phase='battle'; render();
+  const ps=G.players, max=Math.max(...ps.map(q=>q.army)), val=battleVal(G.battleNo)*(G.grande?2:1), pacte=G.pacte;
+  G.battleNo++; G.grande=false; G.pacte=false;
+  const rows=ps.slice().sort((a,b)=>b.army-a.army).map(q=>`<div class="battle-row"><span class="dot" style="background:${q.color}"></span><b>${esc(q.name)}</b><span class="a">${q.army}${icon('army',20)}</span></div>`).join('');
+  let msg=''; const brec={round:G.round,val,army:ps.map(q=>q.army),winners:[]}; (G.rec.battles=G.rec.battles||[]).push(brec);
+  if(max===0){ msg='Personne n’a d’armée : pas de vainqueur.'; addLog('⚔️ Bataille : personne n’a d’armée.'); }
+  else { const W=ps.filter(q=>q.army===max); W.forEach(q=>q.pv+=val); brec.winners=W.map(q=>q.name);
+    if(W.length>1){ msg=`Égalité : ${W.map(who).join(', ')} gagnent ${val} PV chacun. Pas de pillage.`; addLog(`⚔️ Bataille : égalité, +${val} PV pour ${W.map(who).join(', ')}.`); }
+    else { const w=W[0], o=ps.filter(q=>q!==w), mn=Math.min(...o.map(q=>q.army)), V=o.filter(q=>q.army===mn);
+      addLog(`⚔️ Bataille : ${who(w)} l’emporte et gagne ${val} PV.`);
+      if(pacte){ msg=`${who(w)} gagne ${val} PV. Pacte de non-agression : pas de pillage.`; }
+      else { let r;
+        if(w.bot){ r=RES.map(r=>[r,V.reduce((s,q)=>s+q.res[r],0)*({bois:1,pierre:2,or:3}[r])]).sort((a,b)=>b[1]-a[1])[0][0]; }
+        else { openModal(`<h2>⚔️ Bataille n°${G.battleNo} (${val} PV)</h2>${rows}`); await sleep(50);
+          r=await ask(`<h2>⚔️ Tu gagnes la bataille (+${val} PV) !</h2>${rows}<p>Choisis la ressource à piller chez ${V.map(who).join(' et ')} (armée la plus faible).</p><div class="choices">${RES.map(r=>`<button onclick="answer('${r}')">${icon(r,28)}<b>${RES_LABEL[r]}</b><small>${V.reduce((s,q)=>s+q.res[r],0)} à voler</small></button>`).join('')}</div>`); }
+        let tot=0; const parts=V.map(q=>{ const n=q.res[r]; tot+=n; q.res[r]=0; return `${n} à ${who(q)}`; }); w.res[r]+=tot;
+        const det=V.length>1?` (${parts.slice(0,-1).join(', ')} et ${parts[parts.length-1]})`:` à ${who(V[0])}`;
+        msg=`${who(w)} gagne ${val} PV et a pillé ${tot} ${RES_LABEL[r]}${det}.`; addLog(`⚔️ ${who(w)} a pillé ${tot} ${RES_LABEL[r]}${det}.`);
+        brec.loot={res:r,total:tot,from:V.map(q=>[q.name,+parts[V.indexOf(q)].split(' ')[0]])}; } } }
+  ps.forEach(q=>q.army=0); addLog('⚔️ Les armées repartent à 0.');
+  if(G.players.every(q=>q.bot)){ endRound(); return; }
+  await ask(`<h2>⚔️ Bataille n°${G.battleNo} — ${val} PV</h2>${rows}<p>${msg}</p><div class="close-row"><button class="btn" onclick="answer(1)">Continuer</button></div>`);
+  endRound();
+}
+
+/* ================= Bots ================= */
+let botRunning=false;
+async function waitPhase(list){ while(G && !list.includes(G.phase)) await sleep(30); }
+function maybeBot(){ if(G && G.phase==='roll' && P().bot && !botRunning) setTimeout(botTurn,500); }
+function botCopy(q){ const ids=[...new Set(G.players.filter(x=>x!==q).flatMap(x=>x.dice.flat()).filter(id=>id!=='x4'))];
+  const c=ENGINE.choose(G,q.i,ids); if(c){ q.dice[c.di][c.fi]=c.id; addLog(`📋 ${who(q)} copie une face ${faceName(c.id)}.`); } }
+async function botExtras(p){
+  while(p.gifts.length){ const id=p.gifts.shift(); const s=ENGINE.place(G,p.i,id); if(s){ p.dice[s.di][s.fi]=id; addLog(`🎁 ${who(p)} pose sa face ${faceName(id)}.`); render(); await sleep(400); } }
+  while(p.copy>0){ p.copy--; botCopy(p); render(); await sleep(400); }
+}
+async function botTurn(){
+  if(!G||botRunning) return; const p=P(); if(!p.bot||G.phase!=='roll') return;
+  botRunning=true; const game=G;
+  try{
+    syncEngine();
+    if(p.bot.key==='adapt'){ const m=ENGINE.adaptMode(G,p.i); if(m!==p.mode){ if(p.mode) addLog(`🤖 ${who(p)} s’adapte : mode ${({mixte:'polyvalent',rushpv:'anti-rush PV',armee:'anti-armée',science:'anti-science'})[m]}.`); p.mode=m; } }
+    await botExtras(p);
+    if(G.card==='tempete'&&p.dice.length>2) p.useDice=p.dice.map((d,i)=>[avgVal(d),i]).sort((a,b)=>b[0]-a[0]).slice(0,2).map(x=>x[1]);
+    if(G.card==='prophetie'){ const e={or:0,pierre:0,bois:0}; used(p).forEach(i=>p.dice[i].forEach(id=>{ const f=F(id); if(f.type==='res') e[f.r]+=f.n; })); p.prophecy=RES.slice().sort((a,b)=>e[b]-e[a])[0]; note(`🔮 ${who(p)} prédit : ${RES_LABEL[p.prophecy]}.`); }
+    roll(); await waitPhase(['rolled','buy']); if(G!==game) return;
+    if(G.phase==='rolled' && p.pipe){ let best=null; used(p).forEach(i=>p.dice[i].forEach((id,fi)=>{ if(F(id).type==='mult') return; const g=ENGINE.fval(id)-ENGINE.fval(p.dice[i][p.rolled[i]]); if(!best||g>best.g) best={i,fi,g}; }));
+      await sleep(400); if(best) pipeFace(best.i,best.fi); else p.pipe=0; }
+    while(G===game && G.phase==='rolled' && p.rerollsLeft>0){
+      let bi=-1,bd=0; used(p).forEach(i=>{ const d=p.dice[i], dv=avgVal(d)-ENGINE.fval(d[p.rolled[i]]); if(dv>bd){bd=dv;bi=i;} });
+      if(bi<0) break; await sleep(450); rerollDie(bi); await waitPhase(['rolled']); }
+    if(G!==game) return;
+    if(G.phase==='rolled'){ await sleep(300); await collect(); }
+    await waitPhase(['buy']); await sleep(500);
+    await botExtras(p);
+    if(G.card!=='penurie'){
+      if(G.card==='marche') while(p.res.bois>=4){ p.res.bois-=2; p.res.or++; }
+      if(G.card==='mercenaires' && p.res.or>=2 && ENGINE.merc(G,p.i)){ p.res.or-=2; p.army+=2; p.merc=true; note(`⚔️ ${who(p)} engage des mercenaires : +2 armée.`); }
+      for(let k=0;k<25 && G===game;k++){
+        if(p.bot.key==='ultime'){ document.getElementById('gain').innerHTML='🤔 L’Ultime réfléchit…'; await sleep(30); }
+        const d=ENGINE.decide(G,p.i); if(!d) break;
+        const c=costOf(p,d.id); if(!canAfford(p,c)) break; pay(p,c);
+        const old=p.dice[d.di][d.fi]; p.dice[d.di][d.fi]=d.id; p.hist.push([G.round,d.id,old,'achat']);
+        addLog(`${who(p)} remplace ${faceName(old)} par ${faceName(d.id)} (dé ${d.di+1}).`);
+        render(); await sleep(550); }
+    }
+    if(G!==game) return; await sleep(400);
+  } finally { botRunning=false; }
+  if(G===game && G.phase==='buy') endTurn();
+}
+
+/* ================= Affichage ================= */
+let logHidden=window.innerWidth<=640; try{ const v=localStorage.getItem('atelier-log-hidden'); if(v!==null) logHidden=v==='1'; }catch(e){}
+function toggleLog(){ logHidden=!logHidden; try{ localStorage.setItem('atelier-log-hidden',logHidden?'1':'0'); }catch(e){} render(); }
+function render(flash){
+  if(!G) return; const p=P();
+  document.getElementById('players').innerHTML=G.players.map((q,i)=>`
+    <div class="pcard ${i===G.cur?'active':''}" style="--pc:${q.color}" onclick="inspect(${i})" title="Voir les dés de ${esc(q.name)}">
+      ${i===G.cur&&G.phase!=='event'?'<span class="turn-tag">À son tour</span>':''}
+      <div class="nm"><span class="dot" style="background:${q.color}"></span><span class="pn"><span class="be">${q.bot?(q.bot.key==='ultime'?'🏆 ':'🤖 '):''}</span>${esc(q.name)}</span><span class="pv">${q.pv}${icon('pv',17)}</span></div>
+      <div class="res"><span title="Armée">${icon('army',14)}${q.army}</span><span title="Science">${icon('sci',14)}${q.sci}</span><span title="Dés">🎲${q.dice.length}</span><i class="sep"></i>${RES.map(r=>`<span title="${RES_LABEL[r]}">${icon(r,14)}${q.res[r]}</span>`).join('')}</div>
+      <div class="bar"><i style="width:${Math.min(100,q.pv/G.target*100)}%"></i></div>
+    </div>`).join('');
+  const nb=nextBattleInfo(), pile=`<div class="minipile"><div class="cardback"></div><div class="cardback"></div><div class="cardback"></div></div>`;
+  let evh;
+  if(G.card){ const C=CARD[G.card];
+    evh=`${pile}<div class="minicard" id="miniCard" style="margin-left:-34px">${CAT_ICON[C.c]}</div><div style="flex:1;min-width:0"><b>${C.n}</b><div class="t">${C.t}</div>
+      ${(G.cardResult||[]).length?`<div class="results">${G.cardResult.slice(window.innerWidth<=640?-1:-8).map(l=>`<div>${l}</div>`).join('')}</div>`:''}</div>`; }
+  else { const nc=Math.ceil(G.round/CONFIG.battleEvery)*CONFIG.battleEvery; evh=`${pile}<div style="flex:1"><b>Pas de carte cette manche</b><div class="t">Prochaine carte révélée après la bataille de la manche ${G.round%CONFIG.battleEvery===0?G.round:nc} (${G.deck.length} cartes dans la pile).</div></div>`; }
+  document.getElementById('event').innerHTML=`${evh}<span class="bat" title="Bataille à la fin de la manche ${nb.r}">⚔️ ${battleWhen(nb.r)} · ${nb.val} PV${G.pacte?' · sans pillage':''}</span><span class="tag">Manche ${G.round}</span>`;
+  document.getElementById('curDot').style.background=p.color;
+  document.getElementById('curName').textContent=G.phase==='event'?`Manche ${G.round}`:p.bot?`${p.bot.key==='ultime'?'🏆':'🤖'} ${p.name} joue…`:`Tour de ${p.name}`;
+  document.getElementById('roundLbl').textContent=`Objectif ${G.target} PV${G.lastTurnTriggered?' · dernière manche':''}`;
+  const g=G.lastGain&&flash?G.lastGain.gain:{};
+  document.getElementById('stock').innerHTML=RES.map(r=>`<div class="chip ${g[r]?'flash':''}">${icon(r,19)}${p.res[r]}</div>`).join('')+`<div class="chip ${g.pv?'flash':''}">${icon('pv',19)}${p.pv}</div>`;
+  const br=document.getElementById('btnRoll');
+  br.disabled=!!p.bot||!(G.phase==='roll'||G.phase==='rolled'); br.textContent=G.phase==='rolled'?'✔ Récolter':'🎲 Lancer les dés';
+  document.getElementById('btnEnd').disabled=!!p.bot||G.phase!=='buy';
+  const gain=document.getElementById('gain');
+  if(G.phase==='event') gain.innerHTML=G.card?'Carte événement en cours…':'';
+  else if(G.phase==='roll') gain.innerHTML=p.bot?'':'Lance tes dés.';
+  else if(G.phase==='rolled'||G.phase==='rerolling') gain.innerHTML=(p.pipe?'<b>Dés pipés</b> : clique sur une face d’un dé pour la fixer. ':'')+(p.rerollsLeft?`<b>${p.rerollsLeft} relance${p.rerollsLeft>1?'s':''}</b> : clique sur un grand dé pour le relancer, ou récolte.`:'');
+  else if(G.lastGain){ const L=G.lastGain; gain.innerHTML=L.mult>1?`Base : ${gainText(L.base)} → <b>×${L.mult}</b> → <b>${gainText(L.gain)}</b>`:`Récolte : <b>${gainText(L.gain)}</b>`; }
+  // pistes compactes
+  const nxt=SCI_STEPS.find(st=>p.sci<st.at);
+  const sciTip='Paliers de science (acquis pour toute la partie) :\n'+SCI_STEPS.map(st=>`${p.sci>=st.at?'✓':'·'} ${st.at} : ${st.txt}`).join('\n')+'\nAu-delà de 16, la science ne rapporte plus rien.';
+  const armTip=`Bataille à la fin des manches ${CONFIG.battleEvery}, ${CONFIG.battleEvery*2}, ${CONFIG.battleEvery*3}…\nLa plus grosse armée gagne ${battleVal(0)} PV à la 1re bataille, puis +1 à chaque bataille.\nLe vainqueur pille tout le stock d’une ressource au joueur qui a la plus petite armée.\nÉgalité : chacun gagne les PV, pas de pillage.\nToutes les armées repartent à 0 après chaque bataille.`;
+  document.getElementById('tracks').innerHTML=`
+    <span class="trk"><span class="tip" data-tip="${esc(sciTip)}">${icon('sci')}</span>Science ${p.sci}<span class="steps">${SCI_STEPS.map(st=>`<i class="${p.sci>=st.at?'ok':''}"></i>`).join('')}</span>${nxt?`<small class="tracknext">→ ${nxt.at} : ${nxt.txt}</small>`:''}</span>
+    <span class="trk"><span class="tip" data-tip="${esc(armTip)}">${icon('army')}</span>Armée ${p.army} <small class="lg">(+${nb.val} PV prochaine bataille)</small><small class="sm">(+${nb.val} PV)</small></span>
+    ${!p.bot&&p.copy>0?`<button class="btn ghost sm" ${G.phase==='buy'?'':'disabled'} onclick="startCopy()">📋 Copier une face adverse</button>`:''}
+    ${!p.bot&&p.gifts.length?`<button class="btn ghost sm" ${G.phase==='buy'?'':'disabled'} onclick="placeGift()">🎁 Placer ta face ${faceName(p.gifts[0])}</button>`:''}`;
+  const pl=document.getElementById('placing');
+  if(G.phase==='place'){ pl.classList.remove('hidden');
+    pl.innerHTML=`${faceHTML(G.pending,'','style="width:38px;height:38px;font-size:12px"')}<span><b>Clique sur la face à remplacer</b> par ${faceName(G.pending)}.</span><button class="btn ghost sm" style="margin-left:auto" onclick="cancelPlace()">${G.pendingFree?'Plus tard':'Annuler (remboursé)'}</button>`; }
+  else pl.classList.add('hidden');
+  renderDice(false); renderShop();
+  document.getElementById('logArrow').textContent=logHidden?'▸':'▾';
+  const lg=document.getElementById('log'); lg.classList.toggle('hidden',logHidden); lg.innerHTML=G.log.slice(0,60).map(l=>`<div>${l}</div>`).join('');
+}
+function renderDice(rolling,only){
+  const p=P(), picking=G.phase==='place'&&!p.bot, us=used(p), pipeOn=G.phase==='rolled'&&p.pipe&&!p.bot;
+  document.getElementById('dice').innerHTML=p.dice.map((d,di)=>{
+    const off=!us.includes(di), r=p.rolled&&!off?p.rolled[di]:null, spin=rolling&&(only===undefined||only===di)&&!off;
+    const canRr=G.phase==='rolled'&&p.rerollsLeft>0&&!p.bot&&!off;
+    const top=off&&p.rolled?`<div class="face big blank">—</div>`:(r===null?faceHTML(null,'big'):faceHTML(d[r],'big'+(spin?' rolling':'')+(canRr?' can-reroll':''),canRr?`onclick="rerollDie(${di})" title="Relancer ce dé"`:''));
+    const net=d.map((id,fi)=>{ let cls=(!spin&&r===fi)?'hit':'', at='';
+      if(picking) at=`onclick="placeFace(${di},${fi})"`; else if(pipeOn&&!off) at=`onclick="pipeFace(${di},${fi})"`;
+      return faceHTML(id,cls,at); }).join('');
+    return `<div class="die ${off&&p.rolled?'off':''}"><div class="label">Dé ${di+1}${off&&p.rolled?' · pas lancé':''}</div>${top}<div class="net ${picking||(pipeOn&&!off)?'pick':''}">${net}</div></div>`;
+  }).join('');
+}
+function renderShop(){
+  const p=P(), active=G.phase==='buy'&&!p.bot;
+  document.getElementById('shopHint').textContent= G.card==='penurie'?'Pénurie : personne ne peut acheter cette manche.':
+    p.bot?`${p.name} fait ses achats…`: ['roll','rolling','rolled','rerolling','prep','collecting','event'].includes(G.phase)?'Lance d’abord tes dés et récolte.':
+    G.phase==='place'?'Place d’abord ta face.':'Survole une face pour voir son nom. Achète autant que tu veux.';
+  document.getElementById('shop').innerHTML=SHOP.map(g=>`<div class="sgroup">${g.g}</div>`+g.items.map(id=>{ const c=costOf(p,id);
+    return `<button class="item" title="${faceName(id)} — ${costText(c)}" ${active&&canBuy(id)?'':'disabled'} onclick="buy('${id}')">${faceHTML(id)}<span class="cost">${costHTML(c,COSTS[id])}</span></button>`; }).join('')).join('');
+  let ex='';
+  if(G.card==='mercenaires') ex+=`<div class="extra">⚔️ Mercenaires : 2 ${icon('or',13)} → +2 armée <button class="btn sm" style="margin-left:auto" ${active&&!p.merc&&p.res.or>=2?'':'disabled'} onclick="hireMercs()">Engager</button></div>`;
+  if(G.card==='marche') ex+=`<div class="extra">💰 Marché : 2 <select id="trFrom">${RES.map(r=>`<option value="${r}">${RES_LABEL[r]}</option>`).join('')}</select> → 1 <select id="trTo">${RES.map(r=>`<option value="${r}">${RES_LABEL[r]}</option>`).join('')}</select><button class="btn sm" style="margin-left:auto" ${active?'':'disabled'} onclick="trade()">Échanger</button></div>`;
+  document.getElementById('extras').innerHTML=ex;
+}
+function inspect(i){ const q=G.players[i];
+  openModal(`<h2>${who(q)}</h2><p style="color:var(--muted)">${q.bot?BOTS[q.bot.key].desc:'Joueur humain'} · science ${q.sci} · armée ${q.army}</p><div class="dice">${q.dice.map((d,di)=>`<div class="die"><div class="label">Dé ${di+1}</div><div class="net">${d.map(id=>faceHTML(id)).join('')}</div></div>`).join('')}</div><div class="close-row"><button class="btn" onclick="closeModal()">Fermer</button></div>`); }
+function openCards(){
+  const cats=['rattrapage','armée','économie','dés','calme'];
+  openModal(`<h2>🃏 Les ${CARDS.length} cartes événement</h2><p style="color:var(--muted);margin-top:0">Une carte est révélée après chaque bataille ; elle s’applique à tout le monde pendant la manche suivante seulement. « Le joueur qui a le moins de PV » : en cas d’égalité, tous en profitent.</p>
+    <div class="cardlist">${cats.map(c=>`<h3>${CAT_ICON[c]} ${c[0].toUpperCase()+c.slice(1)}</h3>`+CARDS.filter(x=>x.c===c).map(x=>`<div><b>${x.n}</b> — ${x.t}</div>`).join('')).join('')}</div>
+    <div class="close-row"><button class="btn" onclick="closeModal()">Fermer</button></div>`);
+}
+function openSettings(){
+  const ids=SHOP.flatMap(g=>g.items);
+  openModal(`<h2>Réglages</h2>
+    ${G?`<div class="field"><strong>Points de victoire pour gagner</strong><input type="number" min="1" value="${G.target}" onchange="G.target=Math.max(1,parseInt(this.value)||G.target);render()"></div>`:''}
+    <div class="field"><strong>Bataille toutes les</strong><input type="number" min="1" value="${CONFIG.battleEvery}" onchange="CONFIG.battleEvery=Math.max(1,parseInt(this.value)||5);saveConfig();if(G)render()"> manches</div>
+    <div class="field"><strong>PV de la 1re bataille (+1 à chaque bataille)</strong><input type="number" min="0" value="${CONFIG.battlePV}" onchange="CONFIG.battlePV=Math.max(0,parseInt(this.value)||0);saveConfig();if(G)render()"></div>
+    <div class="field"><strong>Force de l’Ultime</strong><select onchange="CONFIG.level=+this.value;saveConfig()">${[[20,'Normal (20 futurs simulés)'],[40,'Fort (40)'],[80,'Ultime (80)'],[160,'Extrême (160, plus lent)']].map(([v,l])=>`<option value="${v}" ${CONFIG.level===v?'selected':''}>${l}</option>`).join('')}</select></div>
+    <table class="cost-table"><tr><th></th><th>Face</th>${RES.map(r=>`<th>${icon(r,16)} ${RES_LABEL[r]}</th>`).join('')}</tr>
+    ${ids.map(id=>`<tr><td>${faceHTML(id)}</td><td>${faceName(id)}</td>${RES.map(r=>`<td><input type="number" min="0" value="${COSTS[id][r]||0}" onchange="COSTS['${id}']['${r}']=Math.max(0,parseInt(this.value)||0);saveCosts();if(G)render()"></td>`).join('')}</tr>`).join('')}</table>
+    <div class="close-row"><button class="btn ghost" onclick="COSTS=JSON.parse(JSON.stringify(DEFAULT_COSTS));CONFIG={...DEFAULT_CONFIG};saveCosts();saveConfig();openSettings();if(G)render()">Valeurs par défaut</button><button class="btn" onclick="closeModal()">OK</button></div>`);
+}
+function openRules(){
+  const t=G?G.target:40, be=CONFIG.battleEvery, f=(id)=>faceHTML(id,'','style="width:26px;height:26px;font-size:10px;display:inline-flex;vertical-align:middle"');
+  openModal(`<h2>📖 Règles</h2><div class="rules2">
+    <p class="goal">🎯 Premier à ${t} PV ${icon('pv',16)}. Quand quelqu’un les atteint, on finit la manche : le plus de PV gagne.</p>
+    <h3>🎲 Départ</h3>
+    <p>Chacun a 2 dés identiques : 1 face +1 PV, 2 faces +1 pierre, 3 faces +1 bois. Pas d’or au départ.</p>
+    <h3>🔁 Ton tour</h3>
+    <ul><li><b>Lance</b> tes dés (et relance si ta science le permet).</li>
+    <li><b>Récolte</b> ce que montrent les dés : ressources, PV, science, armée.</li>
+    <li><b>Achète</b> autant de faces que tu veux. Chaque face achetée <b>remplace</b> une face de ton choix sur tes dés.</li></ul>
+    <h3>🧱 Les faces</h3>
+    <ul><li>${icon('bois',15)} ${icon('pierre',15)} ${icon('or',15)} <b>Ressources</b> : pour acheter d’autres faces.</li>
+    <li>${icon('pv',15)} <b>PV</b> : te rapprochent de la victoire.</li>
+    <li><b>×2 / ×3</b> : multiplient le résultat de tes autres dés (ils se cumulent).</li>
+    <li>${icon('sci',15)} <b>Science</b> : se garde toute la partie et débloque des bonus.</li>
+    <li>${icon('army',15)} <b>Armée</b> : sert aux batailles.</li></ul>
+    <h3>${icon('sci',16)} Paliers de science</h3>
+    <p>2 → 1 relance · 4 → 3e dé · 8 → copier une face adverse · 10 → 2 relances · 14 → 4e dé · 16 → face ×4</p>
+    <h3>⚔️ Batailles</h3>
+    <ul><li>À la fin des manches ${be}, ${be*2}, ${be*3}…</li>
+    <li>La plus grosse armée gagne ${battleVal(0)} PV (puis 1 de plus à chaque bataille).</li>
+    <li>Elle <b>pille</b> tout le stock d’une ressource au joueur qui a la plus petite armée.</li>
+    <li>Égalité en tête : tous gagnent les PV, pas de pillage. Ensuite, toutes les armées repartent à 0.</li></ul>
+    <h3>🃏 Cartes événement</h3>
+    <p>Après chaque bataille, une carte est révélée. Elle change les règles pendant une manche seulement.</p>
+    </div><div class="close-row"><button class="btn" onclick="closeModal()">Compris !</button></div>`);
+}
+function showWinner(){
+  recordGame();
+  const ranked=G.players.slice().sort((a,b)=>b.pv-a.pv), best=ranked[0].pv, W=ranked.filter(q=>q.pv===best);
+  openModal(`<div class="winner"><h2>${W.length>1?'Égalité !':`🏆 ${esc(W[0].name)} gagne !`}</h2>
+    <div class="rank">${ranked.map((q,i)=>`<div><b>${i+1}.</b><span class="dot" style="background:${q.color}"></span>${esc(q.name)}<span class="s">${q.pv} PV</span></div>`).join('')}</div>
+    <button class="btn big" onclick="G=null;showSetup()">Nouvelle partie</button></div>`);
+}
+/* ================= Profil joueur et envoi des parties ================= */
+const APP_VERSION='2026-11-23';
+const BACKEND_URL=(window.ATELIER_CONFIG&&window.ATELIER_CONFIG.backendUrl)||'';
+const ID_KEY='atelier-id-v1', HIST_KEY='atelier-hist-v1', QUEUE_KEY='atelier-queue-v1';
+const lsGet=(k,d)=>{ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } };
+const lsSet=(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
+let ME=lsGet(ID_KEY,null);
+const online=()=>!!BACKEND_URL;
+const myName=()=>ME?ME.name:'Toi';
+function newGameId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+async function api(action,data){
+  const r=await fetch(BACKEND_URL,{method:'POST',body:JSON.stringify({action,...data})});
+  if(!r.ok) throw new Error('HTTP '+r.status); return r.json();
+}
+const plain=h=>{ const d=document.createElement('div'); d.innerHTML=h; return d.textContent; };
+
+function recordGame(){
+  if(!G||G.recorded) return; G.recorded=true;
+  const humans=G.players.filter(q=>!q.bot); if(!humans.length) return;
+  const me=humans.find(q=>ME&&q.name.trim().toLowerCase()===ME.name.toLowerCase())||humans[0];
+  const rankOf=q=>1+G.players.filter(o=>o.pv>q.pv).length, best=Math.max(...G.players.map(q=>q.pv));
+  const rec={id:G.rec.id, version:APP_VERSION, start:G.rec.start, end:new Date().toISOString(),
+    target:G.target, rounds:G.round, nPlayers:G.players.length, seat:me.i, hotseat:humans.length>1,
+    rank:rankOf(me), pv:me.pv, win:me.pv===best,
+    winners:G.players.filter(q=>q.pv===best).map(q=>q.name),
+    players:G.players.map(q=>({name:q.name, type:q.bot?q.bot.key:'humain', pv:q.pv, rank:rankOf(q), sci:q.sci, res:q.res, dice:q.dice, buys:q.hist})),
+    cards:G.rec.cards, battles:G.rec.battles, costs:COSTS, config:CONFIG,
+    log:G.log.slice().reverse().map(plain)};
+  const hist=lsGet(HIST_KEY,[]); hist.unshift(summary(rec)); lsSet(HIST_KEY,hist.slice(0,200));
+  if(online()){ const q=lsGet(QUEUE_KEY,[]); q.push(rec); lsSet(QUEUE_KEY,q.slice(-30)); flushQueue(); }
+}
+function summary(rec){ return {id:rec.id,date:rec.end,rank:rec.rank,pv:rec.pv,win:rec.win,rounds:rec.rounds,nPlayers:rec.nPlayers,
+  opponents:rec.players.filter((_,i)=>i!==rec.seat).map(p=>p.type==='humain'?p.name:p.name).join(', ')}; }
+let flushing=false;
+async function flushQueue(){
+  if(!online()||!ME||flushing) return; flushing=true;
+  try{ let q=lsGet(QUEUE_KEY,[]);
+    while(q.length){ const r=await api('save',{name:ME.name,code:ME.code,game:q[0]});
+      if(!r.ok && r.error!=='duplicate'){ if(r.error==='auth'){ ME=null; lsSet(ID_KEY,null); renderWho(); } break; }
+      q.shift(); lsSet(QUEUE_KEY,q); }
+  }catch(e){ /* hors ligne : on réessaiera plus tard */ }
+  finally{ flushing=false; renderWho(); }
+}
+
+/* ---- pseudo ---- */
+function renderWho(){
+  const el=document.getElementById('whoBox'); if(!el) return;
+  document.getElementById('btnStats').classList.toggle('hidden',!online()&&!lsGet(HIST_KEY,[]).length);
+  if(!online()){ el.innerHTML=''; return; }
+  const pend=lsGet(QUEUE_KEY,[]).length;
+  el.innerHTML=ME?`👤 Connecté en tant que <b>${esc(ME.name)}</b>${pend?` · ${pend} partie${pend>1?'s':''} en attente d’envoi`:''} · <button class="smalllink" onclick="openStats()">Mes stats</button>`
+    :`👤 Pas de pseudo : tes parties ne seront pas enregistrées. <button class="smalllink" onclick="openPseudo()">Choisir un pseudo</button>`;
+}
+function openPseudo(mode){
+  if(mode==='login') return openModal(`<h2>J’ai déjà un pseudo</h2>
+    <p style="color:var(--muted)">Entre ton pseudo et ton code de récupération (visible dans « Mes stats » sur ton autre appareil).</p>
+    <input class="pseudo-in" id="psName" type="text" maxlength="20" placeholder="Pseudo">
+    <input class="pseudo-in" id="psCode" type="text" maxlength="12" placeholder="Code (ex. K7PQ2M)" style="text-transform:uppercase">
+    <div class="errmsg" id="psErr"></div>
+    <div class="close-row"><button class="btn ghost" onclick="openPseudo()">Retour</button><button class="btn" id="psBtn" onclick="doLogin()">Se connecter</button></div>`);
+  openModal(`<h2>👋 Bienvenue dans l’Atelier des Dés</h2>
+    <p>Choisis un pseudo. Tes parties seront enregistrées pour nous aider à améliorer le jeu, et tu pourras suivre tes résultats dans « Mes stats ».</p>
+    <input class="pseudo-in" id="psName" type="text" maxlength="20" placeholder="Ton pseudo (ex. Paul)" onkeydown="if(event.key==='Enter')doRegister()">
+    <div class="errmsg" id="psErr"></div>
+    <p style="font-size:12px;color:var(--muted)">On n’enregistre que ton pseudo et tes parties : pas d’e-mail, pas d’adresse IP.</p>
+    <div class="close-row" style="justify-content:space-between;align-items:center"><button class="smalllink" onclick="openPseudo('login')">J’ai déjà un pseudo</button>
+    <span><button class="btn ghost" onclick="closeModal()">Plus tard</button> <button class="btn" id="psBtn" onclick="doRegister()">C’est parti</button></span></div>`);
+  setTimeout(()=>{ const i=document.getElementById('psName'); if(i) i.focus(); },50);
+}
+function psErr(t){ document.getElementById('psErr').textContent=t; const b=document.getElementById('psBtn'); if(b) b.disabled=false; }
+async function doRegister(){
+  const name=document.getElementById('psName').value.trim().replace(/\s+/g,' ');
+  if(name.length<2) return psErr('Au moins 2 caractères.');
+  if(!/^[\p{L}\p{N} _.'-]+$/u.test(name)) return psErr('Lettres, chiffres, espaces, tirets uniquement.');
+  document.getElementById('psBtn').disabled=true; psErr('');
+  try{ const r=await api('register',{name});
+    if(!r.ok) return psErr(r.error==='taken'?`« ${name} » est déjà pris, choisis-en un autre.`:'Erreur : '+(r.error||'inconnue'));
+    setMe({name:r.name,code:r.code}); closeModal();
+    openModal(`<h2>C’est noté, ${esc(r.name)} !</h2><p>Ton pseudo est réservé sur ce navigateur. Pour jouer sur un autre appareil, garde ce code de récupération :</p>
+      <p style="text-align:center"><span class="code">${esc(r.code)}</span></p><p style="color:var(--muted);font-size:13px">Tu le retrouveras à tout moment dans « Mes stats ».</p>
+      <div class="close-row"><button class="btn" onclick="closeModal()">Jouer</button></div>`);
+  }catch(e){ psErr('Impossible de joindre le serveur. Vérifie ta connexion et réessaie.'); }
+}
+async function doLogin(){
+  const name=document.getElementById('psName').value.trim(), code=document.getElementById('psCode').value.trim().toUpperCase();
+  if(!name||!code) return psErr('Remplis les deux champs.');
+  document.getElementById('psBtn').disabled=true; psErr('');
+  try{ const r=await api('login',{name,code}); if(!r.ok) return psErr('Pseudo ou code incorrect.');
+    setMe({name:r.name,code}); closeModal(); }
+  catch(e){ psErr('Impossible de joindre le serveur. Vérifie ta connexion et réessaie.'); }
+}
+function setMe(m){ ME=m; lsSet(ID_KEY,m); if(types[0]==='human') names[0]=m.name; renderSetup(); renderWho(); flushQueue(); }
+function logout(){ confirmBox('Te déconnecter sur ce navigateur ? Garde bien ton code pour revenir.',()=>{ ME=null; lsSet(ID_KEY,null); names[0]='Toi'; renderSetup(); renderWho(); }); }
+
+/* ---- Mes stats ---- */
+async function openStats(){
+  if(online()&&!ME) return openPseudo();
+  openModal(`<h2>📊 Mes stats</h2><p style="color:var(--muted)">Chargement…</p>`);
+  let games=lsGet(HIST_KEY,[]), src='local';
+  if(online()){ try{ const r=await api('stats',{name:ME.name,code:ME.code}); if(r.ok){ const seen=new Set(r.games.map(g=>g.id)); games=r.games.concat(games.filter(g=>!seen.has(g.id))); src='serveur'; } }catch(e){} }
+  games.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const n=games.length, w=games.filter(g=>g.win).length, avg=n?(games.reduce((s,g)=>s+(+g.pv||0),0)/n).toFixed(1):'–';
+  const fmt=d=>{ const x=new Date(d); return isNaN(x)?'':x.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+x.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); };
+  openModal(`<h2>📊 Mes stats${ME?` — ${esc(ME.name)}`:''}</h2>
+    <div class="stats-tot"><div><b>${n}</b><small>parties</small></div><div><b>${w}</b><small>victoires</small></div><div><b>${n?Math.round(100*w/n)+' %':'–'}</b><small>taux de victoire</small></div><div><b>${avg}</b><small>PV moyens</small></div></div>
+    ${n?`<table class="hist"><tr><th>Date</th><th class="opp">Adversaires</th><th>Rang</th><th>PV</th><th>Manches</th></tr>
+    ${games.slice(0,30).map(g=>`<tr><td>${fmt(g.date)}</td><td class="opp">${esc(g.opponents||'')}</td><td class="${g.win?'win':''}">${g.win?'🏆 1er':g.rank+'e'}/${g.nPlayers}</td><td>${g.pv}</td><td>${g.rounds}</td></tr>`).join('')}</table>`
+      :'<p>Pas encore de partie terminée. À toi de jouer !</p>'}
+    ${ME?`<p style="font-size:13px;color:var(--muted);margin-top:14px">Code de récupération (pour jouer sur un autre appareil) : <span class="code" style="font-size:14px">${esc(ME.code)}</span> · <button class="smalllink" onclick="logout()">Se déconnecter</button></p>`:''}
+    <div class="close-row"><button class="btn" onclick="closeModal()">Fermer</button></div>`);
+}
+function initProfile(){
+  if(ME&&types[0]==='human') names[0]=ME.name;
+  renderSetup(); renderWho();
+  if(online()){ if(!ME) openPseudo(); else flushQueue(); }
+}
+initProfile();
+</script>
+</body>
+</html>
