@@ -1390,7 +1390,8 @@ function render(flash){
   br.disabled=!!p.bot||!(G.phase==='roll'||G.phase==='rolled'); br.textContent=G.phase==='rolled'?'✔ Récolter':'🎲 Lancer les dés';
   document.getElementById('btnEnd').disabled=!!p.bot||G.phase!=='buy';
   const gain=document.getElementById('gain');
-  if(G.phase==='event') gain.innerHTML=G.card?'Carte événement en cours…':'';
+  if(G.phase==='over') gain.innerHTML='🏁 Partie terminée. Clique sur un joueur pour voir ses dés. <button class="btn" onclick="showWinner()">Résultats</button> <button class="btn" onclick="G=null;showSetup()">Nouvelle partie</button>';
+  else if(G.phase==='event') gain.innerHTML=G.card?'Carte événement en cours…':'';
   else if(G.phase==='roll') gain.innerHTML=p.bot?'':'Lance tes dés.';
   else if(G.phase==='rolled'||G.phase==='rerolling') gain.innerHTML=(p.pipe?'<b>Dés pipés</b> : clique sur une face d’un dé pour la fixer. ':'')+(p.rerollsLeft?`<b>${p.rerollsLeft} relance${p.rerollsLeft>1?'s':''}</b> : clique sur un grand dé pour le relancer, ou récolte.`:'');
   else if(G.lastGain){ const L=G.lastGain; gain.innerHTML=L.mult>1?`Base : ${gainText(L.base)} → <b>×${L.mult}</b> → <b>${gainText(L.gain)}</b>`:`Récolte : <b>${gainText(L.gain)}</b>`; }
@@ -1491,7 +1492,7 @@ function showWinner(){
   const ranked=G.players.slice().sort((a,b)=>b.pv-a.pv), best=ranked[0].pv, W=ranked.filter(q=>q.pv===best);
   openModal(`<div class="winner"><h2>${W.length>1?'Égalité !':`🏆 ${esc(W[0].name)} gagne !`}</h2>
     <div class="rank">${ranked.map((q,i)=>`<div><b>${i+1}.</b><span class="dot" style="background:${q.color}"></span>${esc(q.name)}<span class="s">${q.pv} PV</span></div>`).join('')}</div>
-    <button class="btn big" onclick="G=null;showSetup()">Nouvelle partie</button></div>`);
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn big ghost" onclick="closeModal();render()">👀 Voir le plateau</button><button class="btn big" onclick="G=null;showSetup()">Nouvelle partie</button></div></div>`);
 }
 /* ================= Profil joueur et envoi des parties ================= */
 const APP_VERSION='2026-11-24-paliers';
